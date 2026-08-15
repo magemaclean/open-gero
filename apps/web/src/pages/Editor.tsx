@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api, depictUrl } from "../api";
 import { clientDescriptors } from "../rdkit";
+import { Sketcher } from "../components/Sketcher";
 import { ButtonSpinner } from "../components/Loading";
 import { Gauge, PageHeader, useToast } from "../components/ui";
 import type { Molecule, Properties } from "../types";
@@ -35,6 +36,19 @@ export function EditorPage() {
       if (local) {
         setProps(local);
         setSource("wasm");
+        if (local.qed == null) {
+          try {
+            const remote = await api<{ properties: Properties }>("/api/chem/properties", {
+              method: "POST",
+              body: JSON.stringify({ smiles }),
+            });
+            if (!cancelled && remote.properties?.qed != null) {
+              setProps({ ...local, qed: remote.properties.qed });
+            }
+          } catch {
+            /* keep wasm props */
+          }
+        }
         setComputing(false);
         return;
       }
@@ -83,13 +97,16 @@ export function EditorPage() {
       <PageHeader
         kicker="Structure editor"
         title="Draw / add a molecule"
-        subtitle="Paste SMILES from a sketcher (Ketcher, JSME, ChemDraw). Properties update locally via RDKit.js when WASM loads."
+        subtitle="Draw in the embedded sketcher or paste SMILES. Properties update via RDKit.js when WASM loads, with server QED when the client module omits it."
       />
       <div className="grid grid-2">
         <form className="card" onSubmit={add}>
           <div>
             <label>Name</label>
             <input value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <Sketcher smiles={smiles} onSmiles={setSmiles} />
           </div>
           <div style={{ marginTop: 8 }}>
             <label>SMILES</label>
@@ -110,13 +127,7 @@ export function EditorPage() {
               </button>
             ))}
           </div>
-          <p className="muted">
-            External sketcher:{" "}
-            <a href="https://lifescience.opensource.epam.com/ketcher/" target="_blank" rel="noreferrer">
-              Ketcher
-            </a>{" "}
-            — copy SMILES back into this field.
-          </p>
+          <p className="muted">SMILES round-trip with the sketcher. Ketcher remains available as an external option if you prefer it.</p>
           <button type="submit" disabled={saving || !!error}>
             {saving && <ButtonSpinner />}
             Add to project
@@ -149,10 +160,10 @@ export function EditorPage() {
           {props && (
             <>
               <div className="gauge-grid" style={{ marginBottom: 12 }}>
-                <Gauge label="MW" value={props.mw ?? 0} max={500} />
-                <Gauge label="logP" value={props.logp ?? 0} max={5} />
-                <Gauge label="TPSA" value={props.tpsa ?? 0} max={140} />
-                <Gauge label="QED" value={props.qed ?? 0} max={1} />
+                <Gauge label="MW" value={props.mw} max={500} />
+                <Gauge label="logP" value={props.logp} max={5} />
+                <Gauge label="TPSA" value={props.tpsa} max={140} />
+                <Gauge label="QED" value={props.qed} max={1} />
               </div>
               <div className="chip-row" style={{ marginBottom: 10 }}>
                 <span className={`badge ${props.lipinski_pass ? "ok" : "warn"}`}>

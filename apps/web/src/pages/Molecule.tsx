@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, depictUrl } from "../api";
 import { PageLoader } from "../components/Loading";
-import { Gauge, PageHeader } from "../components/ui";
+import { ConfirmDialog, Gauge, PageHeader, useToast } from "../components/ui";
 import type { Job, Molecule } from "../types";
 
 export function MoleculePage() {
   const { projectId, moleculeId } = useParams();
+  const navigate = useNavigate();
+  const toast = useToast();
   const [mol, setMol] = useState<Molecule | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [pendingDelete, setPendingDelete] = useState(false);
   useEffect(() => {
     api<Molecule>(`/api/projects/${projectId}/molecules/${moleculeId}`).then(setMol);
     api<Job[]>(`/api/projects/${projectId}/jobs`).then(setJobs);
@@ -16,7 +19,27 @@ export function MoleculePage() {
   if (!mol) return <PageLoader label="Loading molecule…" />;
   return (
     <div>
-      <PageHeader kicker="Molecule dossier" title={mol.name || "Molecule"} subtitle={<span className="mono">{mol.canonical_smiles}</span>} />
+      <PageHeader
+        kicker="Molecule dossier"
+        title={mol.name || "Molecule"}
+        subtitle={<span className="mono">{mol.canonical_smiles}</span>}
+        actions={
+          <>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() =>
+                navigate(`/projects/${projectId}/search?smiles=${encodeURIComponent(mol.canonical_smiles)}`)
+              }
+            >
+              Search similar
+            </button>
+            <button type="button" className="danger" onClick={() => setPendingDelete(true)}>
+              Delete
+            </button>
+          </>
+        }
+      />
       <div className="grid grid-2">
         <div className="card mol-thumb" style={{ minHeight: 280 }}>
           <img src={depictUrl(mol.canonical_smiles, 360, 260)} alt="" />
@@ -31,10 +54,10 @@ export function MoleculePage() {
           </p>
           {mol.properties && (
             <div className="gauge-grid" style={{ margin: "12px 0" }}>
-              <Gauge label="MW" value={mol.properties.mw ?? 0} max={500} />
-              <Gauge label="logP" value={mol.properties.logp ?? 0} max={5} />
-              <Gauge label="TPSA" value={mol.properties.tpsa ?? 0} max={140} />
-              <Gauge label="QED" value={mol.properties.qed ?? 0} max={1} />
+              <Gauge label="MW" value={mol.properties.mw} max={500} />
+              <Gauge label="logP" value={mol.properties.logp} max={5} />
+              <Gauge label="TPSA" value={mol.properties.tpsa} max={140} />
+              <Gauge label="QED" value={mol.properties.qed} max={1} />
             </div>
           )}
           <h3>Computed properties</h3>
@@ -44,7 +67,7 @@ export function MoleculePage() {
                 Object.entries(mol.properties).map(([k, v]) => (
                   <tr key={k}>
                     <th>{k}</th>
-                    <td className="mono">{String(v)}</td>
+                    <td className="mono">{v == null ? "—" : String(v)}</td>
                   </tr>
                 ))}
             </tbody>
@@ -65,6 +88,20 @@ export function MoleculePage() {
           ))}
         </ul>
       </div>
+      {pendingDelete && (
+        <ConfirmDialog
+          title={`Delete ${mol.name || "molecule"}?`}
+          detail="Soft-deleted and retained for 30 days."
+          confirmLabel="Delete"
+          danger
+          onCancel={() => setPendingDelete(false)}
+          onConfirm={async () => {
+            await api(`/api/projects/${projectId}/molecules/${mol.id}?confirm=true`, { method: "DELETE" });
+            toast.push({ kind: "ok", title: "Molecule deleted" });
+            navigate(`/projects/${projectId}`);
+          }}
+        />
+      )}
     </div>
   );
 }

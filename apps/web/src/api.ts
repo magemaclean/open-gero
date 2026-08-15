@@ -36,6 +36,23 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   return resp.text() as Promise<T>;
 }
 
+export async function apiList<T>(path: string, init: RequestInit = {}): Promise<{ items: T[]; total: number }> {
+  const headers = new Headers(init.headers);
+  const token = getToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const resp = await fetch(path, { ...init, headers });
+  if (resp.status === 401) {
+    setToken(null);
+    window.location.href = "/login";
+  }
+  if (!resp.ok) {
+    throw new Error(resp.statusText);
+  }
+  const items = (await resp.json()) as T[];
+  const total = Number(resp.headers.get("X-Total-Count") || items.length);
+  return { items, total };
+}
+
 export function depictUrl(smiles: string, w = 260, h = 180) {
   return `/api/chem/depict?smiles=${encodeURIComponent(smiles)}&width=${w}&height=${h}`;
 }

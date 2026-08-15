@@ -1,15 +1,16 @@
-import { FormEvent, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { FormEvent, useEffect, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { api, depictUrl } from "../api";
 import { ButtonSpinner, PageLoader } from "../components/Loading";
 import { EmptyState, PageHeader, spotlightMove, useToast } from "../components/ui";
-import type { DatasetHit, Molecule } from "../types";
+import type { DatasetHit, Molecule, SavedSearch } from "../types";
 
 export function SearchPage() {
   const { projectId } = useParams();
+  const [params] = useSearchParams();
   const toast = useToast();
   const [tab, setTab] = useState<"similarity" | "smarts">("similarity");
-  const [smiles, setSmiles] = useState("Oc1cc(O)c2c(c1)oc(-c1ccc(O)c(O)c1)c(O)c2=O");
+  const [smiles, setSmiles] = useState(params.get("smiles") || "Oc1cc(O)c2c(c1)oc(-c1ccc(O)c(O)c1)c(O)c2=O");
   const [threshold, setThreshold] = useState(0.35);
   const [smarts, setSmarts] = useState("c1ccccc1O");
   const [datasetHits, setDatasetHits] = useState<DatasetHit[]>([]);
@@ -17,25 +18,38 @@ export function SearchPage() {
   const [subHits, setSubHits] = useState<Molecule[]>([]);
   const [datasetMeta, setDatasetMeta] = useState("");
   const [savedName, setSavedName] = useState("");
+  const [saved, setSaved] = useState<SavedSearch[]>([]);
   const [searching, setSearching] = useState(false);
   const [didSearch, setDidSearch] = useState(false);
 
-  async function sim(e: FormEvent) {
-    e.preventDefault();
+  async function loadSaved() {
+    if (!projectId) return;
+    setSaved(await api<SavedSearch[]>(`/api/projects/${projectId}/searches`));
+  }
+  useEffect(() => {
+    loadSaved().catch(() => undefined);
+  }, [projectId]);
+
+  useEffect(() => {
+    const q = params.get("smiles");
+    if (q) setSmiles(q);
+  }, [params]);
+
+  async function runSimilarity(query: string, tanimoto: number) {
     setSearching(true);
     try {
       const ds = await api<{ dataset: { name: string; version: string }; hits: DatasetHit[] }>(
         `/api/projects/${projectId}/search/similarity`,
         {
           method: "POST",
-          body: JSON.stringify({ smiles, threshold, against: "dataset", dataset_slug: "geroprotectors" }),
+          body: JSON.stringify({ smiles: query, threshold: tanimoto, against: "dataset", dataset_slug: "geroprotectors" }),
         },
       );
       setDatasetHits(ds.hits);
       setDatasetMeta(`${ds.dataset.name} ${ds.dataset.version}`);
       const lib = await api<{ hits: Molecule[] }>(`/api/projects/${projectId}/search/similarity`, {
         method: "POST",
-        body: JSON.stringify({ smiles, threshold, against: "library" }),
+        body: JSON.stringify({ smiles: query, threshold: tanimoto, against: "library" }),
       });
       setLibHits(lib.hits);
       setDidSearch(true);
@@ -44,19 +58,28 @@ export function SearchPage() {
     }
   }
 
-  async function sub(e: FormEvent) {
+  async function sim(e: FormEvent) {
     e.preventDefault();
+    await runSimilarity(smiles, threshold);
+  }
+
+  async function runSubstructure(query: string) {
     setSearching(true);
     try {
       const resp = await api<{ hits: Molecule[] }>(`/api/projects/${projectId}/search/substructure`, {
         method: "POST",
-        body: JSON.stringify({ smarts }),
+        body: JSON.stringify({ smarts: query }),
       });
       setSubHits(resp.hits);
       setDidSearch(true);
     } finally {
       setSearching(false);
     }
+  }
+
+  async function sub(e: FormEvent) {
+    e.preventDefault();
+    await runSubstructure(smarts);
   }
 
   async function save() {
@@ -70,6 +93,23 @@ export function SearchPage() {
     });
     toast.push({ kind: "ok", title: "Search saved", detail: savedName || "Untitled search" });
     setSavedName("");
+    await loadSaved();
+  }
+
+  function recall(s: SavedSearch) {
+    const p = s.params || {};
+    if (typeof p.smarts === "string") {
+      setSmarts(p.smarts);
+      setTab("smarts");
+      void runSubstructure(p.smarts);
+      return;
+    }
+    if (typeof p.smiles === "string") setSmiles(p.smiles);
+    if (typeof p.threshold === "number") setThreshold(p.threshold);
+    setTab("similarity");
+    const query = typeof p.smiles === "string" ? p.smiles : smiles;
+    const tanimoto = typeof p.threshold === "number" ? p.threshold : threshold;
+    void runSimilarity(query, tanimoto);
   }
 
   return (
@@ -106,6 +146,18 @@ export function SearchPage() {
               Save search
             </button>
           </div>
+          {saved.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <label>Saved searches</label>
+              <div className="chip-row">
+                {saved.map((s) => (
+                  <button key={s.id} type="button" className="chip" onClick={() => recall(s)}>
+                    {s.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </form>
       ) : (
         <form className="card" onSubmit={sub}>

@@ -13,6 +13,7 @@ import { JobsPage, JobDetailPage } from "./pages/Jobs";
 import { DatasetsPage } from "./pages/Datasets";
 import { TargetsPage } from "./pages/Targets";
 import { AdminPage } from "./pages/Admin";
+import { AccountPage } from "./pages/Account";
 
 export default function App() {
   return (
@@ -51,6 +52,14 @@ function AppRoutes() {
             <Route path="datasets" element={<DatasetsPage />} />
             <Route path="targets" element={<TargetsPage />} />
           </Route>
+          <Route
+            path="/account"
+            element={
+              <AppShell mode="projects">
+                <AccountPage />
+              </AppShell>
+            }
+          />
           <Route
             path="/admin"
             element={

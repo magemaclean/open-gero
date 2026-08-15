@@ -1,8 +1,9 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { api, depictUrl, downloadExport } from "../api";
+import { api, apiList, depictUrl, downloadExport, getToken } from "../api";
 import { ButtonSpinner, PageLoader, SkeletonTable } from "../components/Loading";
 import { EmptyState, PageHeader, useToast } from "../components/ui";
+import { jobSocketUrl } from "../lib/query";
 import type { DockingResult, Job, Molecule, Target } from "../types";
 
 export function JobsPage() {
@@ -11,7 +12,7 @@ export function JobsPage() {
   const toast = useToast();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [targets, setTargets] = useState<Target[]>([]);
-  const [mols, setMols] = useState<Molecule[]>([]);
+  const [librarySize, setLibrarySize] = useState(0);
   const [targetId, setTargetId] = useState("");
   const [exhaustiveness, setExhaustiveness] = useState(8);
   const [seed, setSeed] = useState(42);
@@ -24,7 +25,8 @@ export function JobsPage() {
     const t = await api<Target[]>("/api/targets");
     setTargets(t);
     if (t[0] && !targetId) setTargetId(t[0].id);
-    setMols(await api<Molecule[]>(`/api/projects/${projectId}/molecules`));
+    const listed = await apiList<Molecule>(`/api/projects/${projectId}/molecules?limit=1`);
+    setLibrarySize(listed.total);
   }
   useEffect(() => {
     load()
@@ -48,7 +50,7 @@ export function JobsPage() {
           batch_size: 100,
         }),
       });
-      toast.push({ kind: "ok", title: "Docking queued", detail: `${mols.length} molecules` });
+      toast.push({ kind: "ok", title: "Docking queued", detail: `${librarySize} molecules` });
       navigate(`/projects/${projectId}/jobs/${job.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not queue job");
@@ -93,7 +95,7 @@ export function JobsPage() {
           </div>
           <div>
             <label>Library size</label>
-            <input value={mols.length} readOnly />
+            <input value={librarySize} readOnly />
           </div>
         </div>
         {selected && (
@@ -103,7 +105,7 @@ export function JobsPage() {
             {selected.structure_kind === "alphafold" && " · predicted structure, treat poses cautiously"}
           </p>
         )}
-        <button type="submit" disabled={queuing || mols.length === 0}>
+        <button type="submit" disabled={queuing || librarySize === 0}>
           {queuing && <ButtonSpinner />}
           Queue docking
         </button>
@@ -178,9 +180,50 @@ export function JobDetailPage() {
     }
   }
   useEffect(() => {
+    let poll: number | undefined;
+    let ws: WebSocket | undefined;
+    let stopped = false;
+    const apply = (j: Job) => {
+      setJob(j);
+      if (j.status === "done" || j.completed_items > 0) {
+        api<DockingResult[]>(`/api/jobs/${jobId}/results`).then((rows) => {
+          setResults(rows);
+          setSelected((cur) => cur || rows[0]?.molecule_id || "");
+        });
+      }
+    };
     refresh();
-    const t = setInterval(refresh, 1500);
-    return () => clearInterval(t);
+    try {
+      ws = new WebSocket(jobSocketUrl(jobId!, getToken()));
+      ws.onmessage = (ev) => {
+        try {
+          apply(JSON.parse(ev.data) as Job);
+        } catch {
+          /* ignore */
+        }
+      };
+      ws.onerror = () => {
+        if (!stopped && !poll) poll = window.setInterval(() => refresh(), 1500);
+      };
+      ws.onclose = () => {
+        if (stopped || poll) return;
+        void (async () => {
+          const j = await api<Job>(`/api/jobs/${jobId}`);
+          if (stopped) return;
+          apply(j);
+          if (!["done", "failed", "cancelled"].includes(j.status) && !poll) {
+            poll = window.setInterval(() => refresh(), 1500);
+          }
+        })();
+      };
+    } catch {
+      poll = window.setInterval(() => refresh(), 1500);
+    }
+    return () => {
+      stopped = true;
+      ws?.close();
+      if (poll) window.clearInterval(poll);
+    };
   }, [jobId]);
 
   useEffect(() => {

@@ -52,6 +52,6 @@ export async function clientDescriptors(smiles: string): Promise<Properties | nu
     ring_count: rings,
     lipinski_pass: mw <= 500 && logp <= 5 && hbd <= 5 && hba <= 10,
     veber_pass: rot <= 10 && tpsa <= 140,
-    qed: raw.qed,
+    qed: raw.qed != null ? Math.round(raw.qed * 1000) / 1000 : null,
   };
 }

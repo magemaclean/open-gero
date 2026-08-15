@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { MouseEvent, ReactNode } from "react";
+import { formatMetric } from "../lib/query";
 
 export function cx(...parts: Array<string | false | undefined | null>) {
   return parts.filter(Boolean).join(" ");
@@ -80,7 +81,18 @@ export function StatCard({ label, value, hint }: { label: string; value: string 
   );
 }
 
-export function Gauge({ label, value, max, unit }: { label: string; value: number; max: number; unit?: string }) {
+export function Gauge({ label, value, max, unit }: { label: string; value: number | null | undefined; max: number; unit?: string }) {
+  if (value == null || !Number.isFinite(value)) {
+    return (
+      <div className="gauge">
+        <div className="ring" style={{ ["--p" as string]: 0 }} />
+        <div>
+          <div className="muted">{label}</div>
+          <strong className="mono">{formatMetric(value)}</strong>
+        </div>
+      </div>
+    );
+  }
   const p = Math.max(0, Math.min(100, (value / max) * 100));
   return (
     <div className="gauge">
@@ -88,10 +100,57 @@ export function Gauge({ label, value, max, unit }: { label: string; value: numbe
       <div>
         <div className="muted">{label}</div>
         <strong className="mono">
-          {Number.isFinite(value) ? value.toFixed(value < 10 ? 2 : 1) : "—"}
+          {formatMetric(value)}
           {unit ? ` ${unit}` : ""}
         </strong>
       </div>
+    </div>
+  );
+}
+
+export function ConfirmDialog({
+  title,
+  detail,
+  confirmLabel = "Confirm",
+  danger,
+  onCancel,
+  onConfirm,
+  busy,
+}: {
+  title: string;
+  detail: string;
+  confirmLabel?: string;
+  danger?: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+  busy?: boolean;
+}) {
+  return (
+    <div className="palette-backdrop" onClick={onCancel} role="presentation">
+      <div className="palette" role="dialog" aria-labelledby="confirm-title" onClick={(e) => e.stopPropagation()}>
+        <div style={{ padding: "1.1rem 1.15rem" }}>
+          <h2 id="confirm-title">{title}</h2>
+          <p>{detail}</p>
+          <div className="row">
+            <button type="button" className={danger ? "danger" : ""} onClick={onConfirm} disabled={busy}>
+              {confirmLabel}
+            </button>
+            <button type="button" className="secondary" onClick={onCancel}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function EngineBanner({ engine }: { engine?: string }) {
+  if (!engine || engine === "autodock-vina") return null;
+  return (
+    <div className="engine-banner" role="status">
+      Docking engine is <strong className="mono">{engine}</strong> — AutoDock Vina is not available on the worker.
+      Scores are prioritization heuristics, not binding energies.
     </div>
   );
 }

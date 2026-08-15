@@ -3,6 +3,7 @@ export type User = {
   email: string;
   role: string;
   display_name: string;
+  deleted_at?: string | null;
 };
 
 export type Project = {
@@ -12,6 +13,7 @@ export type Project = {
   molecule_count: number;
   job_count: number;
   created_at: string;
+  deleted_at?: string | null;
 };
 
 export type Properties = {
@@ -40,6 +42,7 @@ export type Molecule = {
   created_at: string;
   properties?: Properties | null;
   tanimoto?: number;
+  deleted_at?: string | null;
 };
 
 export type Target = {
@@ -111,6 +114,14 @@ export type DatasetHit = {
   citation: string;
   pmid: string;
   tanimoto?: number;
+};
+
+export type SavedSearch = {
+  id: string;
+  name: string;
+  kind: string;
+  params: Record<string, unknown>;
+  created_at: string;
 };
 
 export type ImportReport = {

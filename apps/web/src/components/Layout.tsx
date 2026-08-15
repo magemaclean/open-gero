@@ -16,7 +16,7 @@ import {
   IconSun,
   IconTarget,
 } from "./icons";
-import { useTheme } from "./ui";
+import { EngineBanner, useTheme } from "./ui";
 
 type NavItem = { to: string; label: string; icon: ReactNode; end?: boolean };
 
@@ -25,12 +25,16 @@ export function AppShell({ children, mode }: { children: ReactNode; mode: "proje
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [collapsed, setCollapsed] = useState(false);
+  const [engine, setEngine] = useState("");
   const { theme, toggle } = useTheme();
 
   useEffect(() => {
     api<User>("/api/auth/me")
       .then(setUser)
       .catch(() => setToken(null));
+    api<{ docking_engine?: string }>("/api/meta")
+      .then((m) => setEngine(m.docking_engine || ""))
+      .catch(() => undefined);
   }, []);
 
   const items = useMemo<NavItem[]>(() => {
@@ -45,9 +49,11 @@ export function AppShell({ children, mode }: { children: ReactNode; mode: "proje
         { to: `${base}/targets`, label: "Targets", icon: <IconTarget /> },
       ];
       if (user?.role === "admin") list.push({ to: "/admin", label: "Admin", icon: <IconAdmin /> });
+      list.push({ to: "/account", label: "Account", icon: <IconAdmin /> });
       return list;
     }
     const list: NavItem[] = [{ to: "/", label: "Projects", icon: <IconProjects />, end: true }];
+    list.push({ to: "/account", label: "Account", icon: <IconAdmin /> });
     if (user?.role === "admin") list.push({ to: "/admin", label: "Admin", icon: <IconAdmin /> });
     return list;
   }, [mode, projectId, user?.role]);
@@ -108,7 +114,10 @@ export function AppShell({ children, mode }: { children: ReactNode; mode: "proje
           </div>
         </div>
       </aside>
-      <main className="main">{children}</main>
+      <main className="main">
+        <EngineBanner engine={engine} />
+        {children}
+      </main>
       <CommandPalette projectId={projectId} isAdmin={user?.role === "admin"} />
     </div>
   );
@@ -124,7 +133,10 @@ function CommandPalette({ projectId, isAdmin }: { projectId?: string; isAdmin?: 
   const [idx, setIdx] = useState(0);
 
   const commands = useMemo<Command[]>(() => {
-    const list: Command[] = [{ id: "home", label: "Projects", hint: "Home", to: "/" }];
+    const list: Command[] = [
+      { id: "home", label: "Projects", hint: "Home", to: "/" },
+      { id: "account", label: "Account", hint: "Password", to: "/account" },
+    ];
     if (isAdmin) list.push({ id: "admin", label: "Admin", hint: "Queue & users", to: "/admin" });
     if (projectId) {
       const base = `/projects/${projectId}`;

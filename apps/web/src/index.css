@@ -184,7 +184,7 @@ label {
 
 .shell {
   display: grid;
-  grid-template-columns: 268px 1fr;
+  grid-template-columns: 248px minmax(0, 1fr);
   min-height: 100vh;
   position: relative;
   z-index: 2;
@@ -348,7 +348,7 @@ label {
 .grid { display: grid; gap: 1rem; }
 .grid-2 { grid-template-columns: 1fr 1fr; }
 .grid-3 { grid-template-columns: repeat(3, 1fr); }
-.grid-4 { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.grid-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .workspace-split {
   display: grid;
   grid-template-columns: minmax(280px, 380px) 1fr;
@@ -357,7 +357,7 @@ label {
 }
 .project-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1rem;
 }
 .project-card-top, .mol-card-top {
@@ -447,6 +447,7 @@ label {
 
 .table-wrap {
   overflow: auto;
+  width: 100%;
   border: 1px solid var(--rule);
   border-radius: 16px;
   background: color-mix(in srgb, var(--card-solid) 88%, transparent);

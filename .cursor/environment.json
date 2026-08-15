@@ -3,16 +3,18 @@
   "install": "bash .cursor/install.sh",
   "terminals": [
     {
-      "name": "api",
-      "command": "DATABASE_URL=sqlite:///./opengero.db SECRET_KEY=dev-secret PYTHONPATH=apps/api .venv/bin/uvicorn opengero.main:app --host 0.0.0.0 --port 8000 --reload"
+      "name": "dockerd",
+      "command": "bash .cursor/dockerd.sh",
+      "description": "Docker daemon configured for this nested Cloud Agent VM (fuse-overlayfs storage, bridge networking fix)."
     },
     {
-      "name": "web",
-      "command": "cd apps/web && npm run dev -- --host 0.0.0.0 --port 5173"
+      "name": "stack",
+      "command": "bash .cursor/stack.sh",
+      "description": "Full OpenGero stack via `docker compose up --build`: postgres, redis, api (:8000), worker, web (:8080)."
     }
   ],
   "ports": [
-    { "name": "api", "port": 8000 },
-    { "name": "web", "port": 5173 }
+    { "name": "web", "port": 8080 },
+    { "name": "api", "port": 8000 }
   ]
 }

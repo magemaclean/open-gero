@@ -186,7 +186,7 @@ export function ProjectsPage() {
               <p className="muted">Name the workspace, then you can import molecules and queue docking jobs.</p>
               {error && <div className="error" style={{ marginBottom: 10 }}>{error}</div>}
               <label>Name</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Senolytic shortlist" autoFocus />
+              <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="e.g. Senolytic shortlist" autoFocus />
               <label style={{ marginTop: 8 }}>Description</label>
               <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="What are you screening?" />
               <div className="row" style={{ marginTop: 12 }}>

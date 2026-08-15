@@ -596,10 +596,12 @@ tr:hover td { background: var(--accent-dim); }
   min-height: 100vh;
   display: grid;
   place-items: center;
-  position: relative;
-  z-index: 2;
+  position: fixed;
+  inset: 0;
+  z-index: 80;
   background: #070b0a;
   color: #eef6f2;
+  animation: fade-in 0.2s ease both;
 }
 .orbital {
   width: 88px;

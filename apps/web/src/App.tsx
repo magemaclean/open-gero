@@ -26,9 +26,9 @@ export default function App() {
 
 function AppRoutes() {
   const booting = useBootSplash();
-  if (booting) return <BootScreen />;
   return (
     <>
+      {booting && <BootScreen />}
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { MouseEvent, ReactNode } from "react";
 
 export function cx(...parts: Array<string | false | undefined | null>) {
@@ -188,27 +188,16 @@ export function useTheme() {
   return useContext(ThemeCtx);
 }
 
-export function usePrefersReducedMotion() {
-  const [reduced, setReduced] = useState(false);
+export function useBootSplash(ms = 900) {
+  const [booting, setBooting] = useState(true);
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const on = () => setReduced(mq.matches);
-    on();
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, []);
-  return reduced;
-}
-
-export function useBootSplash(ms = 720) {
-  const reduced = usePrefersReducedMotion();
-  const [booting, setBooting] = useState(!reduced);
-  const started = useRef(false);
-  useEffect(() => {
-    if (started.current || reduced) return;
-    started.current = true;
+    if (mq.matches) {
+      setBooting(false);
+      return;
+    }
     const t = window.setTimeout(() => setBooting(false), ms);
     return () => window.clearTimeout(t);
-  }, [ms, reduced]);
+  }, [ms]);
   return booting;
 }

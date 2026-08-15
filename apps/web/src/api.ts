@@ -9,6 +9,13 @@ export function setToken(token: string | null) {
   else localStorage.removeItem(TOKEN_KEY);
 }
 
+/** DELETE endpoints return 204 with an empty body; never call JSON.parse on that. */
+export function parseSuccessBody<T>(status: number, contentType: string | null, text: string): T {
+  if (status === 204 || !text.trim()) return undefined as T;
+  if ((contentType || "").includes("application/json")) return JSON.parse(text) as T;
+  return text as T;
+}
+
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   const token = getToken();
@@ -31,9 +38,10 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     }
     throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
   }
+  if (resp.status === 204) return undefined as T;
   const ct = resp.headers.get("content-type") || "";
-  if (ct.includes("application/json")) return resp.json() as Promise<T>;
-  return resp.text() as Promise<T>;
+  const text = await resp.text();
+  return parseSuccessBody<T>(resp.status, ct, text);
 }
 
 export async function apiList<T>(path: string, init: RequestInit = {}): Promise<{ items: T[]; total: number }> {

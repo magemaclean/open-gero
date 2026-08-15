@@ -3,7 +3,12 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-ROOT = Path(__file__).resolve().parents[3]
+_CONFIG_PATH = Path(__file__).resolve()
+# Repo root in the source layout (apps/api/opengero/config.py -> repo root).
+# In container images the package lives at /app/opengero, which has fewer path
+# components, so fall back to the filesystem root there. DATASETS_DIR/TARGETS_DIR
+# env vars override the ROOT-derived defaults in Docker anyway.
+ROOT = _CONFIG_PATH.parents[3] if len(_CONFIG_PATH.parents) > 3 else _CONFIG_PATH.parents[-1]
 
 
 class Settings(BaseSettings):

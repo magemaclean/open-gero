@@ -4,7 +4,7 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPATH=/app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libxrender1 libxext6 libsm6 \
+    libxrender1 libxext6 libsm6 libexpat1 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY apps/api/requirements.txt /app/requirements.txt

@@ -119,6 +119,10 @@ button {
   font-weight: 600;
   position: relative;
   overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
   box-shadow: 0 8px 22px var(--accent-glow);
   transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), filter 0.2s;
 }
@@ -190,7 +194,7 @@ label {
   z-index: 2;
   transition: grid-template-columns 0.35s var(--ease-out);
 }
-.shell.collapsed { grid-template-columns: 84px 1fr; }
+.shell.collapsed { grid-template-columns: 84px minmax(0, 1fr); }
 .sidebar {
   background:
     linear-gradient(180deg, rgba(46, 230, 168, 0.06), transparent 28%),
@@ -852,6 +856,9 @@ tr:hover td { background: var(--accent-dim); }
   font-weight: 500;
 }
 .palette-item.active, .palette-item:hover { background: var(--accent-dim); color: var(--ink); }
+.dialog-form { padding: 1.15rem 1.2rem 1.2rem; }
+.dialog-form h2 { margin-bottom: 0.35rem; }
+.page-head .row button { display: inline-flex; align-items: center; gap: 0.4rem; }
 
 .topbar {
   display: none;

@@ -48,7 +48,7 @@ The Vite dev server proxies `/api` to port 8000.
 
 ## What v0.1 does
 
-1. **Projects** — group molecules, targets, and jobs (soft-delete with confirmation).
+1. **Projects** — group molecules, targets, and jobs (API soft-delete with `confirm=true`; UI delete is still open).
 2. **Import** — SMILES / CSV / SDF, RDKit validation, InChIKey dedupe with a merge report (up to 50k rows).
 3. **Editor** — paste SMILES (round-trip from Ketcher or any sketcher); live MW, logP, TPSA, HBD/HBA, Lipinski/Veber via RDKit.js when WASM loads.
 4. **Library filters** — MW, TPSA, Lipinski, text search.
@@ -67,7 +67,7 @@ apps/worker   RQ worker (descriptor batches + docking)
 data/         Versioned geroprotector snapshot + target catalog
 ```
 
-**Backend choice (PRD open question 1):** v0.1 is an all-Python API + worker instead of .NET 8 + Python sidecar. Chemistry and docking are already Python/RDKit/Vina; a second runtime would add operational surface without helping the screening workflow. The HTTP API is still split so a .NET gateway can be introduced later without rewriting workers.
+**Backend:** All-Python FastAPI + RQ worker. Chemistry and docking are already Python/RDKit/Vina; a second runtime would not help the screening workflow. A .NET API gateway is **not a goal** — see [docs/prd.md](docs/prd.md).
 
 **Docking engine:** AutoDock Vina is used when `vina` and Open Babel are on the worker image. If they are missing, a **deterministic heuristic** runs instead and is labeled `heuristic-v0` in the UI and every export. Those scores are not binding energies.
 
@@ -85,7 +85,7 @@ apps/worker/         RQ consumer
 data/datasets/       Geroprotector snapshot + manifest
 data/targets/        Aging target catalog (PDB / AlphaFold flags)
 deploy/              Optional Caddyfile
-docs/                Deploy and architecture notes
+docs/                PRD, deploy, and architecture notes
 .cursor/skills/      Agent skills (workplace-sync)
 ```
 
@@ -100,10 +100,10 @@ pytest
 
 - JWT email/password, single-organization model
 - Server-side revalidation of every structure
-- Soft-delete on destructive project/library actions
+- Soft-delete APIs with `confirm=true` (UI delete/restore is still open — see the PRD)
 - Persistent UI + HTTP disclaimer: research only, not medical advice
 - No DrugBank or other restrictively licensed data is redistributed
 
-## Roadmap (from the PRD)
+## Product requirements
 
-ADMET models, org roles, public API tokens, ZINC-scale import, scheduled re-screens, and generative design remain explicitly out of v0.1.
+[docs/prd.md](docs/prd.md) is the product source of truth: what v0.1 shipped, API-vs-UI gaps, next improvements, and out-of-scope items (ADMET, org roles, API tokens, ZINC-scale import, scheduled re-screens, generative design, .NET gateway).

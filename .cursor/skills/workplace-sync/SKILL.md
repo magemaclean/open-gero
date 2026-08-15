@@ -46,6 +46,7 @@ Single sources of truth:
 
 | Topic | Canonical file |
 |---|---|
+| Product / remaining work | `docs/prd.md` |
 | How to run | `README.md` + root `docker-compose.yml` |
 | Deploy | `docs/deploy.md` |
 | Internals | `docs/architecture.md` |

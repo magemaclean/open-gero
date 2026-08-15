@@ -1,5 +1,7 @@
 # Architecture notes
 
+Product intent and remaining work: [prd.md](prd.md).
+
 Compose lives only at the repo root (`docker-compose.yml`). Do not add a second file under `deploy/`.
 
 ## Request paths
@@ -11,7 +13,7 @@ Compose lives only at the repo root (`docker-compose.yml`). Do not add a second 
 
 ## Why not the RDKit Postgres cartridge in v0.1
 
-Building `postgresql-rdkit` for every host architecture is the main deploy-friction risk called out in the PRD. Fingerprints as `LargeBinary` plus Python Tanimoto meet the 100k-library interactive target on a 4 vCPU node for the bundled and typical academic libraries. Cartridge operators can replace `search.py` later without a schema break.
+Building `postgresql-rdkit` for every host architecture is the main deploy-friction risk. Fingerprints as `LargeBinary` plus Python Tanimoto meet the 100k-library interactive target on a 4 vCPU node for the bundled and typical academic libraries. Cartridge operators can replace `search.py` later without a schema break. This is an internal swap, not a user-facing feature — see [prd.md](prd.md).
 
 ## AlphaFold targets
 

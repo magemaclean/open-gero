@@ -20,8 +20,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Web build
+      - name: Web
         working-directory: apps/web
         run: |
           npm install
+          npm test
           npm run build

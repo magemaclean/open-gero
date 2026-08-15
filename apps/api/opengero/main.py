@@ -41,6 +41,7 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["X-Total-Count", "X-OpenGero-Disclaimer"],
     )
 
     @app.middleware("http")
@@ -59,11 +60,16 @@ def create_app() -> FastAPI:
 
     @app.get("/api/meta")
     def meta():
+        from .docking import reported_engine, vina_available
+
+        engine = reported_engine()
         return {
             "name": "OpenGero",
             "version": __version__,
             "license": "Apache-2.0",
             "disclaimer": DISCLAIMER,
+            "docking_engine": engine,
+            "vina_available": engine == "autodock-vina" or vina_available(),
         }
 
     app.include_router(auth.router)

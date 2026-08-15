@@ -8,8 +8,9 @@ Compose lives only at the repo root (`docker-compose.yml`). Do not add a second 
 
 1. **Import** — browser uploads SMILES/CSV/SDF → API parses with RDKit → InChIKey upsert → descriptors inline (≤500) or a `descriptor_batch` job.
 2. **Similarity** — query fingerprint vs `dataset_compounds.fp_morgan` or project library fingerprints; Tanimoto in-process.
-3. **Docking** — API writes `jobs` + `job_batches` (default 100 mols) → worker `process_job` → poses under `STORAGE_DIR/poses/{job}/{mol}.pdbqt` → UI polls `/api/jobs/{id}`. `WS /api/ws/jobs/{id}` exists; the client does not subscribe yet. When `vina` / Open Babel are missing, scores are labeled `heuristic-v0`.
+3. **Docking** — API writes `jobs` + `job_batches` (default 100 mols) → worker `process_job` → poses under `STORAGE_DIR/poses/{job}/{mol}.pdbqt` → UI subscribes to `WS /api/ws/jobs/{id}?token=` and falls back to polling `/api/jobs/{id}` if the socket drops. When `vina` / Open Babel are missing, scores are labeled `heuristic-v0` and the workbench shows a heuristic-only banner. The worker publishes the engine name to Redis on start (`opengero:docking_engine`).
 4. **Cache** — unique `(molecule_id, target_id, params_hash)` on `docking_results`. Re-runs skip compute and are labeled cached.
+5. **Soft-delete** — projects and molecules set `deleted_at`; list endpoints omit them unless `deleted=true`. `POST .../restore` clears the flag inside `soft_delete_days` (30). Disabled users cannot authenticate.
 
 ## Why not the RDKit Postgres cartridge in v0.1
 

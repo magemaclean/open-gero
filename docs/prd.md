@@ -14,10 +14,10 @@ Academic geroscience groups stitch commercial suites, desktop docking GUIs, and 
 
 | Role | Who | What they can do today |
 |---|---|---|
-| Researcher | Lab member with an account | Own projects, import/draw molecules, search, queue docking, export |
-| Admin | First registered user, plus the seeded demo account | All researcher actions, plus `/admin` stats, user list, queue health, add targets by PDB ID |
+| Researcher | Lab member with an account | Own projects, import/draw molecules, search, queue docking, export, change password |
+| Admin | First registered user, plus the seeded demo account | All researcher actions, plus `/admin` stats, user list, role changes, disable/enable accounts, queue health, add targets by PDB ID |
 
-Single-organization model. There are no org roles, teams, or public API tokens.
+Single-organization model. There are no org roles, teams, or public API tokens. Disable the seeded demo admin before sharing a lab instance.
 
 ## Decided architecture
 
@@ -28,7 +28,7 @@ These are closed decisions, not open questions.
 | API + worker runtime | All-Python FastAPI + RQ | Chemistry and docking are already Python/RDKit/Vina. A second language does not help the screening workflow. |
 | .NET API gateway | **Not a goal** | Would add a runtime and deploy surface. The HTTP API is already a separate FastAPI app, so a host that *must* terminate at ASP.NET could add a gateway later without rewriting workers. Do not build this unless a specific host requires it. |
 | Search index | App-level Morgan fingerprints in Postgres (`bytea` / `LargeBinary`) + in-process Tanimoto | Avoids building `postgresql-rdkit` for every host architecture. Cartridge SQL can replace `search.py` later without a schema break. |
-| Docking engine | AutoDock Vina when `vina` and Open Babel are on the worker image; otherwise `heuristic-v0` | Heuristic scores are labeled in the UI and every export. They are not binding energies. |
+| Docking engine | AutoDock Vina when `vina` and Open Babel are on the worker image; otherwise `heuristic-v0` | Heuristic scores are labeled in the UI (banner + job results) and every export. They are not binding energies. |
 | Reference data | Hand-curated public-literature snapshot (`data/datasets/`), DrugAge-shaped JSON | Not a DrugAge/GenAge dump. No DrugBank or other restrictively licensed data. |
 | Compose | One file: root `docker-compose.yml` | Services: `postgres`, `redis`, `api`, `worker`, `web`. |
 
@@ -43,66 +43,52 @@ data/         Versioned geroprotector snapshot + aging target catalog
 
 ### Workbench
 
-- JWT email/password auth; register / login; demo account `demo@opengero.local` / `demo12345`
+- JWT email/password auth; register / login; password change at `/account`; demo account `demo@opengero.local` / `demo12345`
 - Dark-first UI with light-mode toggle, command palette (`Ctrl+K` / `⌘K`), orbital loaders, skeletons, toasts
 - Persistent research-only disclaimer in the UI and `X-OpenGero-Disclaimer` on HTTP responses
-- Projects group molecules, targets, and jobs
+- Projects group molecules, targets, and jobs; edit name/description; confirm soft-delete; restore within 30 days
 - Library: SMILES / CSV / SDF import (up to 50,000 rows), RDKit revalidation, InChIKey dedupe with a merge report
 - Descriptors inline for ≤500 new molecules; larger imports enqueue a `descriptor_batch` job
-- Filters: text, MW, TPSA, Lipinski (API also supports Veber, MW min, logP max; UI does not expose all of them)
-- Table and card views; CSV / SDF export with a provenance block
+- Filters: text, MW min/max, TPSA max, logP max, Lipinski, Veber
+- Paginated table and card views (50 per page, `X-Total-Count`); CSV / SDF export with a provenance block
+- Soft-delete molecules with confirm; restore from “Show deleted”
 - Auto-written methods paragraph per project
-- Editor: paste SMILES (external Ketcher link); live MW, logP, TPSA, HBD/HBA, Lipinski/Veber via RDKit.js when WASM loads, else the chemistry service
-- Molecule dossier: depiction, provenance, computed properties, project job list
-- Similarity: Morgan/Tanimoto (radius 2, 2048 bits) vs the bundled geroprotector set and vs the project library
+- Editor: embedded JSME sketcher plus SMILES textarea; live MW, logP, TPSA, HBD/HBA, Lipinski/Veber via RDKit.js when WASM loads, else the chemistry service; QED from the server when the client module omits it (gauges show `—`, not `0.00`)
+- Molecule dossier: depiction, provenance, computed properties, project job list, search-similar, delete
+- Similarity: Morgan/Tanimoto (radius 2, 2048 bits) vs the bundled geroprotector set and vs the project library; start from a dossier SMILES
+- Saved searches: save, list, and re-run from chips on the search page
 - Substructure: SMARTS over the project library
-- Docking jobs: library × catalog target, chunked batches (default 100), cancel, progress poll, result cache on `(molecule_id, target_id, params_hash)`
+- Docking jobs: library × catalog target, chunked batches (default 100), cancel, WebSocket progress with HTTP poll fallback, result cache on `(molecule_id, target_id, params_hash)`
 - Ranked results, 3D pose viewer (3Dmol), ranked CSV export
+- Heuristic-only banner when AutoDock Vina is not on the worker
 - Geroprotector dataset browser (manifest version `0.1.0-2026-08`)
 - Aging target catalog (mTOR, SIRT1, SIRT6, AMPK, IGF1R, NAMPT, CD38, FOXO3 AlphaFold-flagged, and others in `data/targets/catalog.json`)
-- Admin: user count, disk usage, queue health, dataset version
+- Admin: user count, disk usage, queue health, dataset version, docking engine; promote/demote roles; disable/enable users (last admin and self cannot be disabled)
 
-### API that exists but the UI does not use yet
+### API restore and hygiene
 
 | Capability | API | UI |
 |---|---|---|
-| Soft-delete project (30-day retain) | `DELETE /api/projects/{id}?confirm=true` | No delete or confirm dialog |
-| Soft-delete molecule | `DELETE /api/projects/{id}/molecules/{id}?confirm=true` | No delete |
-| Edit project name/description | `PATCH /api/projects/{id}` | Create only |
-| List / reopen saved searches | `GET` + `POST /api/projects/{id}/searches` | Save only |
-| Change user role | `POST /api/admin/users/{id}/role` | Read-only user table |
-| Live job stream | `WS /api/ws/jobs/{id}` | Polls every 1.5s |
-| Library pagination | `limit` (default 200, max 2000) + `offset` | Loads one unpaged request |
-| Extra library filters | `veber`, `mw_min`, `logp_max` | Text, MW max, TPSA max, Lipinski only |
+| Soft-delete project (30-day retain) | `DELETE /api/projects/{id}?confirm=true` | Confirm dialog; recently-deleted list |
+| Restore project | `POST /api/projects/{id}/restore` | Restore on the projects page |
+| Soft-delete molecule | `DELETE /api/projects/{id}/molecules/{id}?confirm=true` | Confirm from library and dossier |
+| Restore molecule | `POST /api/projects/{id}/molecules/{id}/restore` | Library “Show deleted” |
+| Edit project | `PATCH /api/projects/{id}` | Edit modal |
+| Saved searches | `GET` + `POST /api/projects/{id}/searches` | Save, list, re-run |
+| Change role | `POST /api/admin/users/{id}/role` | Role `<select>` |
+| Disable / enable user | `POST /api/admin/users/{id}/disable` · `/enable` | Confirm disable; last-admin protected |
+| Change password | `POST /api/auth/password` | `/account` |
+| Live job stream | `WS /api/ws/jobs/{id}?token=` | Subscribe; poll if the socket drops |
+| Library pagination | `limit` (default 50, max 2000) + `offset` + `X-Total-Count` | Pager |
+| Extra library filters | `veber`, `mw_min`, `logp_max` | Filter builder |
 
-There is no restore/undelete endpoint for soft-deleted rows.
+## Next improvements
 
-## Next improvements (in scope)
+P1–P3 from the v0.1 story are shipped. Remaining items are polish, not unfinished claims:
 
-These are real product gaps against the v0.1 story, not a new milestone.
-
-### P1 — Finish the v0.1 claims
-
-1. **Destructive actions in the UI** — confirm dialogs for project and molecule soft-delete; call `confirm=true`; say that records are retained 30 days.
-2. **Edit project** — name and description from the projects page or a project header.
-3. **Saved-search recall** — list saved searches and re-run them.
-4. **Admin role control** — promote/demote users from `/admin`.
-
-### P2 — Make the workbench hold up
-
-5. **Library pagination** — honor API `limit`/`offset` so a 50k import does not freeze the table.
-6. **Job WebSocket** — subscribe to `/api/ws/jobs/{id}` and keep poll as fallback.
-7. **Restore soft-deletes** — admin or owner undelete within 30 days (API + UI).
-8. **QED display** — stop showing `0.00` when RDKit.js does not emit `qed`; compute on the server or hide the gauge.
-9. **Frontend tests** — CI only `npm run build`s the web app today; add smoke tests for auth, library, and job queue.
-10. **Worker Vina** — treat `autodock-vina` / Open Babel as required on the worker image, or surface a clear “heuristic-only” banner when they are missing.
-
-### P3 — Screening UX
-
-11. **Embedded sketcher** — Ketcher (or equivalent) in the editor instead of a paste-from-another-tab loop.
-12. **Query from library** — start similarity search from a molecule dossier, not only a SMILES box.
-13. **Expose remaining filters** — Veber, MW min, logP max in the filter builder.
-14. **Password change / disable demo admin** — required before a shared lab instance.
+1. **Playwright (or similar) browser e2e** — CI runs `pytest` plus `vitest` (query builder, job socket URL, QED formatting) and `npm run build`. Full click-through auth/library/job coverage is still a gap.
+2. **Ketcher** — the editor embeds **JSME** (CDN). Ketcher remains an optional external sketcher if a lab prefers it; do not vendor a 30MB npm tree unless someone needs Ketcher-specific features.
+3. **2D depiction** — still RDKit SVG via `/api/chem/depict`, not a client-side canvas renderer.
 
 ## Out of scope
 
@@ -124,8 +110,9 @@ After `docker compose up --build` at [http://localhost:8080](http://localhost:80
 1. Sign in as the demo admin.
 2. Open **Senolytic shortlist** (seeded).
 3. Run similarity vs geroprotectors and see organism, effect, PMID.
-4. Queue a docking job against a catalog target; scores are labeled Vina or `heuristic-v0`.
+4. Queue a docking job against a catalog target; scores are labeled Vina or `heuristic-v0`. If Vina is missing, a banner says so.
 5. Export CSV/SDF and read the methods paragraph.
+6. Soft-delete a molecule, restore it, change password on `/account`. On a shared lab, create a second admin and disable `demo@opengero.local`.
 
 ## Sources of truth
 

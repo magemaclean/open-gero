@@ -1,7 +1,7 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session, joinedload
 
 from ..chemistry import descriptors_from_smiles, parse_csv_rows, parse_sdf, parse_smiles, parse_smiles_table
@@ -52,6 +52,7 @@ def _mol_out(mol: Molecule) -> MoleculeOut:
         source=mol.source,
         source_row=mol.source_row,
         created_at=mol.created_at,
+        deleted_at=mol.deleted_at,
         properties=props,
     )
 
@@ -117,6 +118,7 @@ def _upsert(db: Session, project_id: str, parsed, source: str) -> tuple[Molecule
 
 @router.get("/api/projects/{project_id}/molecules", response_model=list[MoleculeOut])
 def list_molecules(
+    response: Response,
     project: Project = Depends(owned_project),
     db: Session = Depends(get_db),
     q: str | None = None,
@@ -126,14 +128,20 @@ def list_molecules(
     mw_min: float | None = None,
     tpsa_max: float | None = None,
     logp_max: float | None = None,
-    limit: int = Query(200, le=2000),
+    deleted: bool = False,
+    limit: int = Query(50, le=2000),
     offset: int = 0,
 ) -> list[MoleculeOut]:
     query = (
         db.query(Molecule)
         .options(joinedload(Molecule.properties))
-        .filter(Molecule.project_id == project.id, Molecule.deleted_at.is_(None))
+        .outerjoin(MoleculeProperty, MoleculeProperty.molecule_id == Molecule.id)
+        .filter(Molecule.project_id == project.id)
     )
+    if deleted:
+        query = query.filter(Molecule.deleted_at.is_not(None))
+    else:
+        query = query.filter(Molecule.deleted_at.is_(None))
     if q:
         like = f"%{q}%"
         query = query.filter(
@@ -141,25 +149,24 @@ def list_molecules(
             | (Molecule.canonical_smiles.ilike(like))
             | (Molecule.inchikey.ilike(like))
         )
+    if lipinski is not None:
+        query = query.filter(MoleculeProperty.lipinski_pass.is_(lipinski))
+    if veber is not None:
+        query = query.filter(MoleculeProperty.veber_pass.is_(veber))
+    if mw_max is not None:
+        query = query.filter(MoleculeProperty.mw.is_not(None), MoleculeProperty.mw <= mw_max)
+    if mw_min is not None:
+        query = query.filter(MoleculeProperty.mw.is_not(None), MoleculeProperty.mw >= mw_min)
+    if tpsa_max is not None:
+        query = query.filter(MoleculeProperty.tpsa.is_not(None), MoleculeProperty.tpsa <= tpsa_max)
+    if logp_max is not None:
+        query = query.filter(MoleculeProperty.logp.is_not(None), MoleculeProperty.logp <= logp_max)
+    total = query.count()
+    if response is not None:
+        response.headers["X-Total-Count"] = str(total)
+        response.headers["Access-Control-Expose-Headers"] = "X-Total-Count"
     rows = query.order_by(Molecule.created_at.desc()).offset(offset).limit(limit).all()
-    out = []
-    for mol in rows:
-        item = _mol_out(mol)
-        props = item.properties
-        if lipinski is not None and (not props or props.lipinski_pass != lipinski):
-            continue
-        if veber is not None and (not props or props.veber_pass != veber):
-            continue
-        if mw_max is not None and (not props or props.mw is None or props.mw > mw_max):
-            continue
-        if mw_min is not None and (not props or props.mw is None or props.mw < mw_min):
-            continue
-        if tpsa_max is not None and (not props or props.tpsa is None or props.tpsa > tpsa_max):
-            continue
-        if logp_max is not None and (not props or props.logp is None or props.logp > logp_max):
-            continue
-        out.append(item)
-    return out
+    return [_mol_out(mol) for mol in rows]
 
 
 @router.post("/api/projects/{project_id}/molecules", response_model=MoleculeOut, status_code=201)
@@ -309,3 +316,29 @@ def delete_molecule(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Molecule not found")
     mol.deleted_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.commit()
+
+
+@router.post("/api/projects/{project_id}/molecules/{molecule_id}/restore", response_model=MoleculeOut)
+def restore_molecule(
+    molecule_id: str,
+    project: Project = Depends(owned_project),
+    db: Session = Depends(get_db),
+) -> MoleculeOut:
+    mol = (
+        db.query(Molecule)
+        .options(joinedload(Molecule.properties))
+        .filter(Molecule.id == molecule_id, Molecule.project_id == project.id)
+        .first()
+    )
+    if mol is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Molecule not found")
+    if mol.deleted_at is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Molecule is not deleted")
+    days = get_settings().soft_delete_days
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
+    if mol.deleted_at < cutoff:
+        raise HTTPException(status.HTTP_410_GONE, f"Restore window of {days} days has expired")
+    mol.deleted_at = None
+    db.commit()
+    db.refresh(mol)
+    return _mol_out(mol)

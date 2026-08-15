@@ -29,7 +29,7 @@ Change the default Postgres password before any network-exposed deploy.
 
 ## Users
 
-The first account created on a blank database is an admin. The seeded demo user is also admin (`demo@opengero.local`). Disable or delete it on a shared lab instance.
+The first account created on a blank database is an admin. The seeded demo user is also admin (`demo@opengero.local` / `demo12345`). Before a shared lab deploy: change passwords on `/account`, create a second admin if needed, then disable the demo account from `/admin`. The last remaining admin cannot be demoted or disabled.
 
 ## Adding DrugAge / GenAge snapshots
 

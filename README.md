@@ -48,15 +48,15 @@ The Vite dev server proxies `/api` to port 8000.
 
 ## What v0.1 does
 
-1. **Projects** — group molecules, targets, and jobs (API soft-delete with `confirm=true`; UI delete is still open).
+1. **Projects** — group molecules, targets, and jobs; edit; confirm soft-delete with 30-day restore.
 2. **Import** — SMILES / CSV / SDF, RDKit validation, InChIKey dedupe with a merge report (up to 50k rows).
-3. **Editor** — paste SMILES (round-trip from Ketcher or any sketcher); live MW, logP, TPSA, HBD/HBA, Lipinski/Veber via RDKit.js when WASM loads.
-4. **Library filters** — MW, TPSA, Lipinski, text search.
-5. **Similarity** — Morgan/Tanimoto against the bundled geroprotector set, with organism, effect, and PMID.
+3. **Editor** — embedded JSME sketcher or paste SMILES; live MW, logP, TPSA, HBD/HBA, Lipinski/Veber via RDKit.js when WASM loads; QED from the server when the client omits it.
+4. **Library filters** — text, MW min/max, TPSA, logP max, Lipinski, Veber; paginated table/cards.
+5. **Similarity** — Morgan/Tanimoto against the bundled geroprotector set, with organism, effect, and PMID; start from a molecule dossier; save and re-run searches.
 6. **Substructure** — SMARTS search over the project library.
-7. **Docking jobs** — chunked batches, cancel, live progress, result cache keyed on molecule + target + parameters.
+7. **Docking jobs** — chunked batches, cancel, WebSocket progress (HTTP poll fallback), result cache keyed on molecule + target + parameters.
 8. **Results** — ranked scores, 3D pose viewer, CSV/SDF export with a provenance block, auto-written methods paragraph.
-9. **Admin** — users, disk usage, queue health. First registered user is admin; the demo account is admin.
+9. **Admin / account** — users, roles, disable/enable (last-admin protected), disk usage, queue health, password change. First registered user is admin; disable the seeded demo admin on a shared lab.
 
 ## Architecture
 
@@ -94,16 +94,17 @@ docs/                PRD, deploy, and architecture notes
 ```bash
 pip install -r apps/api/requirements.txt
 pytest
+cd apps/web && npm test && npm run build
 ```
 
 ## Security & product constraints
 
-- JWT email/password, single-organization model
+- JWT email/password, single-organization model; password change at `/account`
 - Server-side revalidation of every structure
-- Soft-delete APIs with `confirm=true` (UI delete/restore is still open — see the PRD)
+- Soft-delete with `confirm=true` and owner restore within 30 days
 - Persistent UI + HTTP disclaimer: research only, not medical advice
 - No DrugBank or other restrictively licensed data is redistributed
 
 ## Product requirements
 
-[docs/prd.md](docs/prd.md) is the product source of truth: what v0.1 shipped, API-vs-UI gaps, next improvements, and out-of-scope items (ADMET, org roles, API tokens, ZINC-scale import, scheduled re-screens, generative design, .NET gateway).
+[docs/prd.md](docs/prd.md) is the product source of truth: what v0.1 shipped, remaining polish, and out-of-scope items (ADMET, org roles, API tokens, ZINC-scale import, scheduled re-screens, generative design, .NET gateway).

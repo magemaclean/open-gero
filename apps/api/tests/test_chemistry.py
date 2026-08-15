@@ -34,6 +34,8 @@ def test_lipinski_and_veber_aspirin():
     assert desc.veber_pass is True
     assert desc.hbd >= 1
     assert desc.formula.startswith("C")
+    assert desc.qed is not None
+    assert desc.qed > 0
 
 
 def test_tanimoto_identical_is_one():

@@ -9,6 +9,13 @@ export function setToken(token: string | null) {
   else localStorage.removeItem(TOKEN_KEY);
 }
 
+/** DELETE endpoints return 204 with an empty body; never call JSON.parse on that. */
+export function parseSuccessBody<T>(status: number, contentType: string | null, text: string): T {
+  if (status === 204 || !text.trim()) return undefined as T;
+  if ((contentType || "").includes("application/json")) return JSON.parse(text) as T;
+  return text as T;
+}
+
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   const token = getToken();
@@ -31,9 +38,27 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     }
     throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
   }
+  if (resp.status === 204) return undefined as T;
   const ct = resp.headers.get("content-type") || "";
-  if (ct.includes("application/json")) return resp.json() as Promise<T>;
-  return resp.text() as Promise<T>;
+  const text = await resp.text();
+  return parseSuccessBody<T>(resp.status, ct, text);
+}
+
+export async function apiList<T>(path: string, init: RequestInit = {}): Promise<{ items: T[]; total: number }> {
+  const headers = new Headers(init.headers);
+  const token = getToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const resp = await fetch(path, { ...init, headers });
+  if (resp.status === 401) {
+    setToken(null);
+    window.location.href = "/login";
+  }
+  if (!resp.ok) {
+    throw new Error(resp.statusText);
+  }
+  const items = (await resp.json()) as T[];
+  const total = Number(resp.headers.get("X-Total-Count") || items.length);
+  return { items, total };
 }
 
 export function depictUrl(smiles: string, w = 260, h = 180) {

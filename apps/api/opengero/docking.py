@@ -26,6 +26,36 @@ def engine_name() -> str:
     return "heuristic-v0"
 
 
+ENGINE_KEY = "opengero:docking_engine"
+
+
+def publish_engine() -> str:
+    name = engine_name()
+    try:
+        from redis import Redis
+
+        from .config import get_settings
+
+        Redis.from_url(get_settings().redis_url).set(ENGINE_KEY, name)
+    except Exception:
+        pass
+    return name
+
+
+def reported_engine() -> str:
+    try:
+        from redis import Redis
+
+        from .config import get_settings
+
+        raw = Redis.from_url(get_settings().redis_url).get(ENGINE_KEY)
+        if raw:
+            return raw.decode() if isinstance(raw, bytes) else str(raw)
+    except Exception:
+        pass
+    return engine_name()
+
+
 def heuristic_score(smiles: str, target_slug: str, seed: int) -> float:
     """Deterministic prioritization heuristic — not a binding free energy.
 

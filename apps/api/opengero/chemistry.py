@@ -35,7 +35,7 @@ class DescriptorsResult:
     ring_count: int
     lipinski_pass: bool
     veber_pass: bool
-    qed: float
+    qed: float | None
     formula: str
 
 
@@ -98,7 +98,7 @@ def compute_descriptors(mol: Chem.Mol) -> DescriptorsResult:
     try:
         qed = float(QED.qed(mol))
     except Exception:
-        qed = 0.0
+        qed = None
     formula = rdMolDescriptors.CalcMolFormula(mol)
     return DescriptorsResult(
         mw=round(mw, 3),
@@ -110,7 +110,7 @@ def compute_descriptors(mol: Chem.Mol) -> DescriptorsResult:
         ring_count=rings,
         lipinski_pass=lipinski,
         veber_pass=veber,
-        qed=round(qed, 4),
+        qed=round(qed, 4) if qed is not None else None,
         formula=formula,
     )
 

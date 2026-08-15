@@ -1,0 +1,14 @@
+{
+  "note": "Bundled reference sets are curated public-literature snapshots, not a redistribution of DrugAge or GenAge dumps. Add OSI-compatible snapshots here and list them below. CI should reject restrictively licensed sources (e.g. DrugBank).",
+  "datasets": [
+    {
+      "slug": "geroprotectors",
+      "name": "OpenGero geroprotector reference set",
+      "version": "0.1.0-2026-08",
+      "license": "CC0-1.0 (curated public facts + public SMILES)",
+      "file": "geroprotectors_v0.1.json",
+      "description": "Hand-curated compounds with published lifespan or healthspan evidence in model organisms. Structured for DrugAge-compatible import later.",
+      "source_url": "https://genomics.senescence.info/drugs/"
+    }
+  ]
+}

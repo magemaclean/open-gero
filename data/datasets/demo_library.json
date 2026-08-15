@@ -1,0 +1,22 @@
+[
+  {"name": "Metformin", "smiles": "CN(C)C(=N)NC(=N)N"},
+  {"name": "Resveratrol", "smiles": "Oc1ccc(/C=C/c2cc(O)cc(O)c2)cc1"},
+  {"name": "Quercetin", "smiles": "Oc1cc(O)c2c(c1)oc(-c1ccc(O)c(O)c1)c(O)c2=O"},
+  {"name": "Fisetin", "smiles": "Oc1ccc(-c2oc3cc(O)cc(O)c3c(=O)c2O)c(O)c1"},
+  {"name": "Dasatinib", "smiles": "Cc1nc(Nc2ncc(s2)C(=O)Nc2c(C)cccc2Cl)cc(n1)N1CCN(CC1)CCO"},
+  {"name": "Spermidine", "smiles": "NCCCCNCCCN"},
+  {"name": "Taurine", "smiles": "NCCS(=O)(=O)O"},
+  {"name": "Urolithin A", "smiles": "Oc1ccc2c(c1)oc(=O)c1cc(O)ccc12"},
+  {"name": "Berberine", "smiles": "COc1ccc2cc3[n+](cc2c1OC)CCc1cc2c(cc1-3)OCO2"},
+  {"name": "Caffeine", "smiles": "Cn1c(=O)c2c(ncn2C)n(C)c1=O"},
+  {"name": "Aspirin", "smiles": "CC(=O)Oc1ccccc1C(=O)O"},
+  {"name": "Melatonin", "smiles": "COc1ccc2[nH]cc(CCNC(C)=O)c2c1"},
+  {"name": "Curcumin", "smiles": "COc1cc(/C=C/C(=O)CC(=O)/C=C/c2ccc(O)c(OC)c2)ccc1O"},
+  {"name": "Nicotinamide", "smiles": "NC(=O)c1cccnc1"},
+  {"name": "Ibuprofen", "smiles": "CC(C)Cc1ccc(cc1)C(C)C(=O)O"},
+  {"name": "Propranolol", "smiles": "CC(C)NCC(O)COc1cccc2ccccc12"},
+  {"name": "Imatinib", "smiles": "Cc1ccc(cc1Nc1nccc(-c2cccnc2)n1)C(=O)Nc1ccc(cc1)CN1CCN(C)CC1"},
+  {"name": "Gefitinib", "smiles": "COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1OCCCN1CCOCC1"},
+  {"name": "Piperlongumine", "smiles": "COc1cc(C=CC(=O)N2CCCC=C2C=O)cc(OC)c1OC"},
+  {"name": "N-acetylcysteine", "smiles": "CC(=O)N[C@@H](CS)C(=O)O"}
+]

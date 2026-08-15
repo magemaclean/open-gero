@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { api } from "../api";
+import { SkeletonCards, SkeletonTable } from "../components/Loading";
+import { PageHeader, StatCard } from "../components/ui";
 import type { User } from "../types";
 
 type Stats = {
@@ -18,42 +19,43 @@ export function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [jobs, setJobs] = useState<{ id: string; type: string; status: string; error: string }[]>([]);
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
-    api<Stats>("/api/admin/stats").then(setStats);
-    api<User[]>("/api/admin/users").then(setUsers);
-    api<typeof jobs>("/api/admin/jobs").then(setJobs);
+    Promise.all([api<Stats>("/api/admin/stats"), api<User[]>("/api/admin/users"), api<typeof jobs>("/api/admin/jobs")])
+      .then(([s, u, j]) => {
+        setStats(s);
+        setUsers(u);
+        setJobs(j);
+      })
+      .finally(() => setLoading(false));
   }, []);
   return (
-    <div className="shell">
-      <aside className="sidebar">
-        <Link to="/" className="brand">
-          OpenGero
-          <small>Admin</small>
-        </Link>
-        <Link className="nav-link" to="/">
-          Projects
-        </Link>
-      </aside>
-      <main className="main">
-        <h1>Administration</h1>
-        {stats && (
-          <div className="grid grid-3">
-            <Stat label="Users" value={stats.users} />
-            <Stat label="Projects" value={stats.projects} />
-            <Stat label="Molecules" value={stats.molecules} />
-            <Stat label="Queued jobs" value={stats.jobs_queued} />
-            <Stat label="Running" value={stats.jobs_running} />
-            <Stat label="Failed" value={stats.jobs_failed} />
-            <Stat label="Disk (bytes)" value={stats.disk_bytes} />
-            <Stat label="Dataset" value={stats.dataset_version} />
-          </div>
-        )}
-        <h2>Users</h2>
+    <div>
+      <PageHeader kicker="Operations" title="Administration" subtitle="Users, disk usage, and queue health for this instance." />
+      {loading || !stats ? (
+        <SkeletonCards count={4} />
+      ) : (
+        <div className="grid grid-3 stagger">
+          <StatCard label="Users" value={stats.users} />
+          <StatCard label="Projects" value={stats.projects} />
+          <StatCard label="Molecules" value={stats.molecules} />
+          <StatCard label="Queued jobs" value={stats.jobs_queued} />
+          <StatCard label="Running" value={stats.jobs_running} />
+          <StatCard label="Failed" value={stats.jobs_failed} />
+          <StatCard label="Disk" value={formatBytes(stats.disk_bytes)} hint="Persistent storage" />
+          <StatCard label="Dataset" value={stats.dataset_version} />
+        </div>
+      )}
+      <h2 style={{ marginTop: 24 }}>Users</h2>
+      {loading ? (
+        <SkeletonTable rows={3} />
+      ) : (
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Email</th>
+                <th>Name</th>
                 <th>Role</th>
               </tr>
             </thead>
@@ -61,13 +63,20 @@ export function AdminPage() {
               {users.map((u) => (
                 <tr key={u.id}>
                   <td>{u.email}</td>
-                  <td>{u.role}</td>
+                  <td>{u.display_name}</td>
+                  <td>
+                    <span className={`badge ${u.role === "admin" ? "ok" : ""}`}>{u.role}</span>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <h2>Queue health</h2>
+      )}
+      <h2 style={{ marginTop: 24 }}>Queue health</h2>
+      {loading ? (
+        <SkeletonTable rows={3} />
+      ) : (
         <div className="table-wrap">
           <table>
             <thead>
@@ -81,25 +90,25 @@ export function AdminPage() {
               {jobs.map((j) => (
                 <tr key={j.id}>
                   <td>{j.type}</td>
-                  <td>{j.status}</td>
+                  <td>
+                    <span className={`badge ${j.status === "done" ? "ok" : j.status === "failed" ? "danger" : "warn"}`}>
+                      {j.status}
+                    </span>
+                  </td>
                   <td>{j.error}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </main>
+      )}
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="card">
-      <div className="muted">{label}</div>
-      <div className="serif" style={{ fontSize: "1.6rem" }}>
-        {value}
-      </div>
-    </div>
-  );
+function formatBytes(n: number) {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(n / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }

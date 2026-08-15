@@ -4,10 +4,14 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPATH=/app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libxrender1 libxext6 libsm6 libexpat1 autodock-vina openbabel \
-    && rm -rf /var/lib/apt/lists/* || apt-get update && apt-get install -y --no-install-recommends \
     libxrender1 libxext6 libsm6 libexpat1 \
     && rm -rf /var/lib/apt/lists/*
+
+# Vina is required for real docking scores. If the package is missing on this
+# architecture, the worker still starts and reports heuristic-v0 to the API.
+RUN apt-get update && apt-get install -y --no-install-recommends autodock-vina openbabel \
+    && rm -rf /var/lib/apt/lists/* \
+    || echo "WARNING: autodock-vina/openbabel not installed; docking will use heuristic-v0"
 
 COPY apps/api/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt

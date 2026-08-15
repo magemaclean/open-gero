@@ -1,11 +1,12 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..deps import current_user, owned_project
+from ..config import get_settings
+from ..deps import current_user, owned_project, owned_project_any
 from ..models import Job, Molecule, Project, User
 from ..schemas import ProjectIn, ProjectOut
 
@@ -28,12 +29,21 @@ def _to_out(db: Session, project: Project) -> ProjectOut:
         updated_at=project.updated_at,
         molecule_count=mols,
         job_count=jobs,
+        deleted_at=project.deleted_at,
     )
 
 
 @router.get("", response_model=list[ProjectOut])
-def list_projects(user: User = Depends(current_user), db: Session = Depends(get_db)) -> list[ProjectOut]:
-    q = db.query(Project).filter(Project.deleted_at.is_(None))
+def list_projects(
+    deleted: bool = False,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> list[ProjectOut]:
+    q = db.query(Project)
+    if deleted:
+        q = q.filter(Project.deleted_at.is_not(None))
+    else:
+        q = q.filter(Project.deleted_at.is_(None))
     if user.role != "admin":
         q = q.filter(Project.owner_id == user.id)
     return [_to_out(db, p) for p in q.order_by(Project.updated_at.desc()).all()]
@@ -81,3 +91,20 @@ def delete_project(
         )
     project.deleted_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.commit()
+
+
+@router.post("/{project_id}/restore", response_model=ProjectOut)
+def restore_project(
+    project: Project = Depends(owned_project_any),
+    db: Session = Depends(get_db),
+) -> ProjectOut:
+    if project.deleted_at is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Project is not deleted")
+    days = get_settings().soft_delete_days
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
+    if project.deleted_at < cutoff:
+        raise HTTPException(status.HTTP_410_GONE, f"Restore window of {days} days has expired")
+    project.deleted_at = None
+    db.commit()
+    db.refresh(project)
+    return _to_out(db, project)

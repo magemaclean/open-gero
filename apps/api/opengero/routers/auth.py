@@ -5,7 +5,7 @@ from ..auth import create_access_token, hash_password, verify_password
 from ..db import get_db
 from ..deps import current_user
 from ..models import User
-from ..schemas import LoginIn, TokenOut, UserCreate, UserOut
+from ..schemas import LoginIn, PasswordChangeIn, TokenOut, UserCreate, UserOut
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -38,3 +38,16 @@ def login(body: LoginIn, db: Session = Depends(get_db)) -> TokenOut:
 @router.get("/me", response_model=UserOut)
 def me(user: User = Depends(current_user)) -> User:
     return user
+
+
+@router.post("/password")
+def change_password(
+    body: PasswordChangeIn,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
+    if not verify_password(body.current_password, user.password_hash):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Current password is incorrect")
+    user.password_hash = hash_password(body.new_password)
+    db.commit()
+    return {"ok": True}

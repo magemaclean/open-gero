@@ -28,8 +28,14 @@ class UserOut(BaseModel):
     role: str
     display_name: str
     created_at: datetime
+    deleted_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+class PasswordChangeIn(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=8, max_length=128)
 
 
 class ProjectIn(BaseModel):
@@ -45,6 +51,7 @@ class ProjectOut(BaseModel):
     updated_at: datetime
     molecule_count: int = 0
     job_count: int = 0
+    deleted_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -79,6 +86,7 @@ class MoleculeOut(BaseModel):
     source: str
     source_row: int | None
     created_at: datetime
+    deleted_at: datetime | None = None
     properties: PropertiesOut | None = None
 
     model_config = {"from_attributes": True}
@@ -265,3 +273,5 @@ class AdminStats(BaseModel):
     jobs_failed: int
     disk_bytes: int
     dataset_version: str
+    docking_engine: str
+    vina_available: bool

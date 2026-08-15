@@ -41,3 +41,17 @@ def owned_project(
     if project.owner_id != user.id and user.role != "admin":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your project")
     return project
+
+
+def owned_project_any(
+    project_id: str,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> Project:
+    """Like owned_project but includes soft-deleted rows (for restore)."""
+    project = db.get(Project, project_id)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Project not found")
+    if project.owner_id != user.id and user.role != "admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your project")
+    return project

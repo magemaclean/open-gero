@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 from sqlalchemy.orm import Session, joinedload
 
 from ..chemistry import params_hash
@@ -232,7 +232,12 @@ def get_pose(
 
 
 @router.websocket("/api/ws/jobs/{job_id}")
-async def job_ws(websocket: WebSocket, job_id: str):
+async def job_ws(websocket: WebSocket, job_id: str, token: str | None = Query(default=None)):
+    from ..auth import decode_token
+
+    if not decode_token(token or ""):
+        await websocket.close(code=4401)
+        return
     await websocket.accept()
     try:
         import asyncio

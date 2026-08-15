@@ -256,12 +256,15 @@ export function JobDetailPage() {
         title={`Job ${job.type}`}
         subtitle={
           <>
-            Status{" "}
-            <span className={`badge ${job.status === "done" ? "ok" : job.status === "failed" ? "danger" : "warn"}${live ? " pulse" : ""}`}>
-              {job.status}
+            <Link to={`/projects/${projectId}/jobs`}>← Jobs</Link>
+            <span style={{ display: "block", marginTop: 6 }}>
+              Status{" "}
+              <span className={`badge ${job.status === "done" ? "ok" : job.status === "failed" ? "danger" : "warn"}${live ? " pulse" : ""}`}>
+                {job.status}
+              </span>
+              {job.cached && <span className="badge ok">cached</span>} · engine params hash{" "}
+              <span className="mono">{job.params_hash.slice(0, 12)}</span>
             </span>
-            {job.cached && <span className="badge ok">cached</span>} · engine params hash{" "}
-            <span className="mono">{job.params_hash.slice(0, 12)}</span>
           </>
         }
       />

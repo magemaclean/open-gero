@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, depictUrl } from "../api";
 import { PageLoader } from "../components/Loading";
-import { ConfirmDialog, Gauge, PageHeader, useToast } from "../components/ui";
+import { ConfirmDialog, ActionMenu, Gauge, PageHeader, useToast } from "../components/ui";
 import type { Job, Molecule } from "../types";
 
 export function MoleculePage() {
@@ -22,7 +22,14 @@ export function MoleculePage() {
       <PageHeader
         kicker="Molecule dossier"
         title={mol.name || "Molecule"}
-        subtitle={<span className="mono">{mol.canonical_smiles}</span>}
+        subtitle={
+          <>
+            <Link to={`/projects/${projectId}`}>← Library</Link>
+            <span className="mono" style={{ display: "block", marginTop: 6 }}>
+              {mol.canonical_smiles}
+            </span>
+          </>
+        }
         actions={
           <>
             <button
@@ -34,9 +41,7 @@ export function MoleculePage() {
             >
               Search similar
             </button>
-            <button type="button" className="danger" onClick={() => setPendingDelete(true)}>
-              Delete
-            </button>
+            <ActionMenu items={[{ label: "Delete", danger: true, onClick: () => setPendingDelete(true) }]} />
           </>
         }
       />

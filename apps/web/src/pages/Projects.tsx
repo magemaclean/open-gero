@@ -1,8 +1,8 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { SkeletonCards } from "../components/Loading";
-import { ConfirmDialog, EmptyState, PageHeader, spotlightMove, useToast } from "../components/ui";
+import { ConfirmDialog, ActionMenu, EmptyState, PageHeader, spotlightMove, useToast } from "../components/ui";
 import type { Project } from "../types";
 
 export function ProjectsPage() {
@@ -97,10 +97,10 @@ export function ProjectsPage() {
       <PageHeader
         kicker="Workspace"
         title="Projects"
-        subtitle="Group molecules, aging-related targets, and docking jobs. Soft-deleted projects are retained for 30 days."
+        subtitle="Open a project to work with its library, search, and docking jobs. Soft-deleted projects are retained for 30 days."
       />
       {error && <div className="error" style={{ marginBottom: 12 }}>{error}</div>}
-      <div className="grid grid-2">
+      <div className="workspace-split">
         <form className="card" onSubmit={create}>
           <h2>New project</h2>
           <div className="grid">
@@ -123,29 +123,33 @@ export function ProjectsPage() {
           ) : projects.length === 0 ? (
             <EmptyState title="No projects yet" detail="Create one to start importing candidates and queuing docking jobs." />
           ) : (
-            <div className="grid stagger">
+            <div className="project-grid stagger">
               {projects.map((p) => (
-                <div key={p.id} className="card interactive" onMouseMove={spotlightMove}>
-                  <Link to={`/projects/${p.id}`} className="linkish" style={{ textDecoration: "none", color: "inherit" }}>
-                    <h3>{p.name}</h3>
-                    <p>{p.description || "No description"}</p>
-                  </Link>
+                <div key={p.id} className="card interactive project-card" onMouseMove={spotlightMove}>
+                  <div className="project-card-top">
+                    <div>
+                      <h3>{p.name}</h3>
+                      <p>{p.description || "No description"}</p>
+                    </div>
+                    <ActionMenu
+                      items={[
+                        {
+                          label: "Edit",
+                          onClick: () => {
+                            setEditing(p);
+                            setEditName(p.name);
+                            setEditDescription(p.description);
+                          },
+                        },
+                        { label: "Delete", danger: true, onClick: () => setPendingDelete(p) },
+                      ]}
+                    />
+                  </div>
                   <span className="badge">{p.molecule_count} molecules</span>{" "}
                   <span className="badge">{p.job_count} jobs</span>
-                  <div className="row" style={{ marginTop: 10 }}>
-                    <button
-                      type="button"
-                      className="secondary"
-                      onClick={() => {
-                        setEditing(p);
-                        setEditName(p.name);
-                        setEditDescription(p.description);
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button type="button" className="danger" onClick={() => setPendingDelete(p)}>
-                      Delete
+                  <div className="row" style={{ marginTop: 12 }}>
+                    <button type="button" onClick={() => navigate(`/projects/${p.id}`)}>
+                      Open project
                     </button>
                   </div>
                 </div>

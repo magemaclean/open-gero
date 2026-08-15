@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { SkeletonCards, SkeletonTable } from "../components/Loading";
-import { ConfirmDialog, PageHeader, StatCard, useToast } from "../components/ui";
+import { ConfirmDialog, ActionMenu, PageHeader, StatCard, useToast } from "../components/ui";
 import type { User } from "../types";
 
 type Stats = {
@@ -82,7 +82,7 @@ export function AdminPage() {
                 <th>Name</th>
                 <th>Role</th>
                 <th>Status</th>
-                <th></th>
+                <th className="row-actions" />
               </tr>
             </thead>
             <tbody>
@@ -106,25 +106,19 @@ export function AdminPage() {
                   <td>
                     <span className={`badge ${u.deleted_at ? "danger" : "ok"}`}>{u.deleted_at ? "disabled" : "active"}</span>
                   </td>
-                  <td>
-                    {u.deleted_at ? (
-                      <button
-                        type="button"
-                        className="secondary"
-                        onClick={() => api(`/api/admin/users/${u.id}/enable`, { method: "POST" }).then(() => load())}
-                      >
-                        Enable
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="danger"
-                        disabled={u.id === me?.id}
-                        onClick={() => setPendingDisable(u)}
-                      >
-                        Disable
-                      </button>
-                    )}
+                  <td className="row-actions">
+                    <ActionMenu
+                      items={
+                        u.deleted_at
+                          ? [
+                              {
+                                label: "Enable",
+                                onClick: () => api(`/api/admin/users/${u.id}/enable`, { method: "POST" }).then(() => load()),
+                              },
+                            ]
+                          : [{ label: "Disable", danger: true, disabled: u.id === me?.id, onClick: () => setPendingDisable(u) }]
+                      }
+                    />
                   </td>
                 </tr>
               ))}

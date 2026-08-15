@@ -1,9 +1,9 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, apiList, depictUrl, downloadExport } from "../api";
 import { IconDownload, IconUpload } from "../components/icons";
 import { ButtonSpinner, SkeletonTable } from "../components/Loading";
-import { ConfirmDialog, DropZone, EmptyState, PageHeader, useToast } from "../components/ui";
+import { ActionMenu, ConfirmDialog, DropZone, EmptyState, PageHeader, useToast } from "../components/ui";
 import { PAGE_SIZE, moleculeQuery } from "../lib/query";
 import type { ImportReport, Molecule, Project } from "../types";
 
@@ -25,6 +25,7 @@ function MethodsCard({ projectId }: { projectId: string }) {
 
 export function LibraryPage() {
   const { projectId } = useParams();
+  const navigate = useNavigate();
   const toast = useToast();
   const [project, setProject] = useState<Project | null>(null);
   const [mols, setMols] = useState<Molecule[]>([]);
@@ -118,7 +119,7 @@ export function LibraryPage() {
         }
       />
       {error && <div className="error" style={{ marginBottom: 12 }}>{error}</div>}
-      <div className="grid grid-2">
+      <div className="library-tools">
         <form className="card" onSubmit={onImport}>
           <h2>Import SMILES / CSV / SDF</h2>
           <p className="muted">Up to 50,000 rows. Server re-validates with RDKit, canonicalizes, and merges InChIKey duplicates.</p>
@@ -229,21 +230,41 @@ export function LibraryPage() {
           <EmptyState title="Library is empty" detail="Import SMILES, CSV, or SDF to populate this project." />
         </div>
       ) : view === "cards" ? (
-        <div className="grid grid-3 stagger" style={{ marginTop: 16 }}>
+        <div className="grid grid-4 stagger" style={{ marginTop: 16 }}>
           {mols.map((m) => (
-            <Link key={m.id} to={`/projects/${projectId}/molecules/${m.id}`} className="card interactive linkish">
-              <div className="mol-thumb">
-                <img src={depictUrl(m.canonical_smiles, 200, 140)} alt="" />
+            <div key={m.id} className="card interactive mol-card">
+              <div className="mol-card-top">
+                <ActionMenu
+                  items={
+                    showDeleted
+                      ? [
+                          {
+                            label: "Restore",
+                            onClick: () =>
+                              api(`/api/projects/${projectId}/molecules/${m.id}/restore`, { method: "POST" }).then(() => load()),
+                          },
+                        ]
+                      : [
+                          { label: "Open", onClick: () => navigate(`/projects/${projectId}/molecules/${m.id}`) },
+                          { label: "Delete", danger: true, onClick: () => setPendingDelete(m) },
+                        ]
+                  }
+                />
               </div>
-              <h3 style={{ marginTop: 10 }}>{m.name || "unnamed"}</h3>
-              <div className="mono muted">{m.inchikey}</div>
-              <div className="chip-row" style={{ marginTop: 8 }}>
-                <span className="badge">{m.properties?.mw?.toFixed(1)} MW</span>
-                <span className={`badge ${m.properties?.lipinski_pass ? "ok" : "warn"}`}>
-                  {m.properties?.lipinski_pass ? "Lipinski" : "flag"}
-                </span>
-              </div>
-            </Link>
+              <Link to={`/projects/${projectId}/molecules/${m.id}`} className="linkish">
+                <div className="mol-thumb">
+                  <img src={depictUrl(m.canonical_smiles, 200, 140)} alt="" />
+                </div>
+                <h3 style={{ marginTop: 10 }}>{m.name || "unnamed"}</h3>
+                <div className="mono muted">{m.inchikey}</div>
+                <div className="chip-row" style={{ marginTop: 8 }}>
+                  <span className="badge">{m.properties?.mw?.toFixed(1)} MW</span>
+                  <span className={`badge ${m.properties?.lipinski_pass ? "ok" : "warn"}`}>
+                    {m.properties?.lipinski_pass ? "Lipinski" : "flag"}
+                  </span>
+                </div>
+              </Link>
+            </div>
           ))}
         </div>
       ) : (
@@ -258,7 +279,7 @@ export function LibraryPage() {
                 <th>TPSA</th>
                 <th>Lipinski</th>
                 <th>Veber</th>
-                <th></th>
+                <th className="row-actions" />
               </tr>
             </thead>
             <tbody>
@@ -286,22 +307,23 @@ export function LibraryPage() {
                       {m.properties?.veber_pass ? "pass" : "flag"}
                     </span>
                   </td>
-                  <td>
-                    {showDeleted ? (
-                      <button
-                        type="button"
-                        className="secondary"
-                        onClick={() =>
-                          api(`/api/projects/${projectId}/molecules/${m.id}/restore`, { method: "POST" }).then(() => load())
-                        }
-                      >
-                        Restore
-                      </button>
-                    ) : (
-                      <button type="button" className="danger" onClick={() => setPendingDelete(m)}>
-                        Delete
-                      </button>
-                    )}
+                  <td className="row-actions">
+                    <ActionMenu
+                      items={
+                        showDeleted
+                          ? [
+                              {
+                                label: "Restore",
+                                onClick: () =>
+                                  api(`/api/projects/${projectId}/molecules/${m.id}/restore`, { method: "POST" }).then(() => load()),
+                              },
+                            ]
+                          : [
+                              { label: "Open", onClick: () => navigate(`/projects/${projectId}/molecules/${m.id}`) },
+                              { label: "Delete", danger: true, onClick: () => setPendingDelete(m) },
+                            ]
+                      }
+                    />
                   </td>
                 </tr>
               ))}

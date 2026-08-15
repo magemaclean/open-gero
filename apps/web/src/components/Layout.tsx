@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate, useParams } from "react-router-dom";
 import { api, setToken } from "../api";
-import type { User } from "../types";
+import type { Project, User } from "../types";
 import {
   IconAdmin,
+  IconChevron,
   IconDraw,
   IconFlask,
   IconJobs,
@@ -16,16 +17,20 @@ import {
   IconSun,
   IconTarget,
 } from "./icons";
-import { EngineBanner, useTheme } from "./ui";
+import { Breadcrumbs, EngineBanner, useTheme } from "./ui";
+import { crumbsFor, lastProjectId, rememberProject } from "../lib/nav";
 
 type NavItem = { to: string; label: string; icon: ReactNode; end?: boolean };
 
 export function AppShell({ children, mode }: { children: ReactNode; mode: "projects" | "project" | "admin" }) {
   const { projectId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [engine, setEngine] = useState("");
+  const [project, setProject] = useState<Project | null>(null);
+  const [resumeId, setResumeId] = useState<string | null>(() => lastProjectId());
   const { theme, toggle } = useTheme();
 
   useEffect(() => {
@@ -37,26 +42,33 @@ export function AppShell({ children, mode }: { children: ReactNode; mode: "proje
       .catch(() => undefined);
   }, []);
 
-  const items = useMemo<NavItem[]>(() => {
-    if (mode === "project" && projectId) {
-      const base = `/projects/${projectId}`;
-      const list: NavItem[] = [
-        { to: base, label: "Library", icon: <IconLibrary />, end: true },
-        { to: `${base}/editor`, label: "Draw / add", icon: <IconDraw /> },
-        { to: `${base}/search`, label: "Search", icon: <IconSearch /> },
-        { to: `${base}/jobs`, label: "Jobs", icon: <IconJobs /> },
-        { to: `${base}/datasets`, label: "Geroprotectors", icon: <IconFlask /> },
-        { to: `${base}/targets`, label: "Targets", icon: <IconTarget /> },
-      ];
-      if (user?.role === "admin") list.push({ to: "/admin", label: "Admin", icon: <IconAdmin /> });
-      list.push({ to: "/account", label: "Account", icon: <IconAdmin /> });
-      return list;
+  useEffect(() => {
+    rememberProject(projectId);
+    if (projectId) setResumeId(projectId);
+    if (!projectId) {
+      setProject(null);
+      return;
     }
-    const list: NavItem[] = [{ to: "/", label: "Projects", icon: <IconProjects />, end: true }];
-    list.push({ to: "/account", label: "Account", icon: <IconAdmin /> });
-    if (user?.role === "admin") list.push({ to: "/admin", label: "Admin", icon: <IconAdmin /> });
-    return list;
-  }, [mode, projectId, user?.role]);
+    api<Project>(`/api/projects/${projectId}`)
+      .then(setProject)
+      .catch(() => setProject(null));
+  }, [projectId]);
+
+  const projectItems = useMemo<NavItem[]>(() => {
+    if (!projectId) return [];
+    const base = `/projects/${projectId}`;
+    return [
+      { to: base, label: "Library", icon: <IconLibrary />, end: true },
+      { to: `${base}/editor`, label: "Draw / add", icon: <IconDraw /> },
+      { to: `${base}/search`, label: "Search", icon: <IconSearch /> },
+      { to: `${base}/jobs`, label: "Jobs", icon: <IconJobs /> },
+      { to: `${base}/datasets`, label: "Geroprotectors", icon: <IconFlask /> },
+      { to: `${base}/targets`, label: "Targets", icon: <IconTarget /> },
+    ];
+  }, [projectId]);
+
+  const crumbs = crumbsFor(location.pathname, project);
+  const showResume = !projectId && resumeId;
 
   return (
     <div className={`shell${collapsed ? " collapsed" : ""}`}>
@@ -68,22 +80,53 @@ export function AppShell({ children, mode }: { children: ReactNode; mode: "proje
           {!collapsed && (
             <span>
               OpenGero
-              <small>{mode === "admin" ? "Administration" : mode === "projects" ? "Projects" : "Longevity screening"}</small>
+              <small>{project?.name || (mode === "admin" ? "Administration" : "Projects")}</small>
             </span>
           )}
         </NavLink>
-        {items.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
-            title={item.label}
-          >
-            {item.icon}
-            {!collapsed && <span>{item.label}</span>}
+        <NavLink to="/" end className={({ isActive }) => `nav-link${isActive ? " active" : ""}`} title="All projects">
+          <IconProjects />
+          {!collapsed && <span>All projects</span>}
+        </NavLink>
+        {showResume && (
+          <NavLink to={`/projects/${resumeId}`} className="nav-link" title="Resume project">
+            <IconChevron />
+            {!collapsed && <span>Resume project</span>}
           </NavLink>
-        ))}
+        )}
+        {projectId && (
+          <>
+            {!collapsed && (
+              <div className="nav-section">
+                <div className="nav-section-label">This project</div>
+                <div className="nav-section-name">{project?.name || "Loading…"}</div>
+              </div>
+            )}
+            {projectItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
+                title={item.label}
+              >
+                {item.icon}
+                {!collapsed && <span>{item.label}</span>}
+              </NavLink>
+            ))}
+          </>
+        )}
+        <div className="nav-spacer" />
+        <NavLink to="/account" className={({ isActive }) => `nav-link${isActive ? " active" : ""}`} title="Account">
+          <IconAdmin />
+          {!collapsed && <span>Account</span>}
+        </NavLink>
+        {user?.role === "admin" && (
+          <NavLink to="/admin" className={({ isActive }) => `nav-link${isActive ? " active" : ""}`} title="Admin">
+            <IconAdmin />
+            {!collapsed && <span>Admin</span>}
+          </NavLink>
+        )}
         <div className="sidebar-foot">
           {!collapsed && (
             <div className="user-chip">
@@ -116,6 +159,7 @@ export function AppShell({ children, mode }: { children: ReactNode; mode: "proje
       </aside>
       <main className="main">
         <EngineBanner engine={engine} />
+        <Breadcrumbs crumbs={crumbs} />
         {children}
       </main>
       <CommandPalette projectId={projectId} isAdmin={user?.role === "admin"} />
@@ -134,7 +178,7 @@ function CommandPalette({ projectId, isAdmin }: { projectId?: string; isAdmin?: 
 
   const commands = useMemo<Command[]>(() => {
     const list: Command[] = [
-      { id: "home", label: "Projects", hint: "Home", to: "/" },
+      { id: "home", label: "All projects", hint: "Home", to: "/" },
       { id: "account", label: "Account", hint: "Password", to: "/account" },
     ];
     if (isAdmin) list.push({ id: "admin", label: "Admin", hint: "Queue & users", to: "/admin" });

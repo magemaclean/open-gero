@@ -68,6 +68,12 @@ export const IconSpark = (p: IconProps) => (
 export const IconMenu = (p: IconProps) => (
   <Svg {...p}><path d="M5 7h14M5 12h14M5 17h10" /></Svg>
 );
+export const IconMore = (p: IconProps) => (
+  <Svg {...p}><circle cx="12" cy="5" r="1.2" fill="currentColor" /><circle cx="12" cy="12" r="1.2" fill="currentColor" /><circle cx="12" cy="19" r="1.2" fill="currentColor" /></Svg>
+);
+export const IconChevron = (p: IconProps) => (
+  <Svg {...p}><path d="M9 6l6 6-6 6" /></Svg>
+);
 export const IconProjects = (p: IconProps) => (
   <Svg {...p}><rect x="4" y="4" width="7" height="7" rx="1.6" /><rect x="13" y="4" width="7" height="7" rx="1.6" /><rect x="4" y="13" width="7" height="7" rx="1.6" /><rect x="13" y="13" width="7" height="7" rx="1.6" /></Svg>
 );

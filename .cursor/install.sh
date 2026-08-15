@@ -14,8 +14,11 @@ export DEBIAN_FRONTEND=noninteractive
 # 1. Docker Engine + Compose plus the packages a nested (container-in-container)
 #    VM needs: iptables for NAT/port publishing, fuse-overlayfs for the storage
 #    driver (overlay2 cannot stack on the VM's own overlay rootfs), uidmap.
+# --force-confold/--force-confdef keep existing conffiles without an interactive
+# prompt (the base image ships /etc/fuse.conf, which otherwise stalls fuse3).
 sudo apt-get update -qq
 sudo apt-get install -y -qq --no-install-recommends \
+  -o Dpkg::Options::=--force-confold -o Dpkg::Options::=--force-confdef \
   docker.io docker-compose-v2 iptables fuse-overlayfs uidmap
 
 # 2. Daemon config for the nested VM: use the classic graphdriver with

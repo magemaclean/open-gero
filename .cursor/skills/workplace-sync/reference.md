@@ -24,9 +24,9 @@ Walk this list against the current tree. Fix any row that fails.
 - Local dev: `PYTHONPATH=apps/api`, API **8000**, Vite proxies `/api`
 - README layout lists directories that exist; no `docs/methods`, `packages/shared-types`, or `deploy/docker-compose.yml`
 - Architecture doc matches job flow: RDKit ingest, in-process Tanimoto, RQ/`process_job`, heuristic-v0 when Vina is absent
-- `docs/prd.md` matches shipped APIs/UI (no .NET gateway as a goal; soft-delete and saved-search gaps stated as unfinished)
+- `docs/prd.md` matches shipped APIs/UI (no .NET gateway as a goal; P1–P3 workbench items are shipped, not listed as unfinished)
 - Dataset version string in `manifest.json` matches what `/api/admin/stats` and exports would show after seed
-- CI runs `pytest` from repo root and `npm run build` in `apps/web`
+- CI runs `pytest` from repo root and `npm test` then `npm run build` in `apps/web`
 
 ## Compose
 

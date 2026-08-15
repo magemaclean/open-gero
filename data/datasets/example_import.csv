@@ -1,0 +1,6 @@
+smiles,name
+CN(C)C(=N)NC(=N)N,Metformin
+Oc1ccc(/C=C/c2cc(O)cc(O)c2)cc1,Resveratrol
+NCCCCNCCCN,Spermidine
+CC(=O)Oc1ccccc1C(=O)O,Aspirin
+not-a-smiles,Should-fail

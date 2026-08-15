@@ -7,6 +7,7 @@ Walk this list against the current tree. Fix any row that fails.
 - `README.md`
 - `LICENSE` (Apache 2.0)
 - `docker-compose.yml` (repo root; only compose file)
+- `docs/prd.md`
 - `docs/deploy.md`
 - `docs/architecture.md`
 - `apps/api/opengero/main.py`
@@ -23,6 +24,7 @@ Walk this list against the current tree. Fix any row that fails.
 - Local dev: `PYTHONPATH=apps/api`, API **8000**, Vite proxies `/api`
 - README layout lists directories that exist; no `docs/methods`, `packages/shared-types`, or `deploy/docker-compose.yml`
 - Architecture doc matches job flow: RDKit ingest, in-process Tanimoto, RQ/`process_job`, heuristic-v0 when Vina is absent
+- `docs/prd.md` matches shipped APIs/UI (no .NET gateway as a goal; soft-delete and saved-search gaps stated as unfinished)
 - Dataset version string in `manifest.json` matches what `/api/admin/stats` and exports would show after seed
 - CI runs `pytest` from repo root and `npm run build` in `apps/web`
 

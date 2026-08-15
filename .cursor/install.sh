@@ -42,13 +42,13 @@ sudo sysctl -w net.bridge.bridge-nf-call-ip6tables=0 >/dev/null 2>&1 || true
 #    dockerd terminal); only the built images persist in the snapshot.
 if ! sudo docker info >/dev/null 2>&1; then
   sudo rm -f /var/run/docker.pid
-  sudo sh -c 'nohup dockerd >/tmp/dockerd.log 2>&1 &'
+  sudo bash -c 'setsid dockerd >/var/log/opengero-dockerd.log 2>&1 < /dev/null &'
   for _ in $(seq 1 60); do
     sudo docker info >/dev/null 2>&1 && break
     sleep 1
   done
 fi
-sudo docker info >/dev/null 2>&1 || { echo "dockerd failed to start"; tail -n 40 /tmp/dockerd.log 2>/dev/null || true; exit 1; }
+sudo docker info >/dev/null 2>&1 || { echo "dockerd failed to start"; sudo tail -n 40 /var/log/opengero-dockerd.log 2>/dev/null || true; exit 1; }
 
 sudo docker compose build
 

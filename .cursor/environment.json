@@ -1,16 +1,12 @@
 {
   "name": "OpenGero",
   "install": "bash .cursor/install.sh",
+  "start": "bash .cursor/start.sh",
   "terminals": [
     {
-      "name": "dockerd",
-      "command": "bash .cursor/dockerd.sh",
-      "description": "Docker daemon configured for this nested Cloud Agent VM (fuse-overlayfs storage, bridge networking fix)."
-    },
-    {
-      "name": "stack",
-      "command": "bash .cursor/stack.sh",
-      "description": "Full OpenGero stack via `docker compose up --build`: postgres, redis, api (:8000), worker, web (:8080)."
+      "name": "stack-logs",
+      "command": "bash .cursor/logs.sh",
+      "description": "Streams `docker compose logs -f` for the OpenGero stack (postgres, redis, api :8000, worker, web :8080)."
     }
   ],
   "ports": [

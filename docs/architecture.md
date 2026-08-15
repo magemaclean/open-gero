@@ -1,5 +1,7 @@
 # Architecture notes
 
+Compose lives only at the repo root (`docker-compose.yml`). Do not add a second file under `deploy/`.
+
 ## Request paths
 
 1. **Import** — browser uploads SMILES/CSV/SDF → API parses with RDKit → InChIKey upsert → descriptors inline (≤500) or a `descriptor_batch` job.

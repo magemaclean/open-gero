@@ -6,7 +6,7 @@
 git clone https://github.com/magemaclean/open-gero.git
 cd open-gero
 cp .env.example .env   # set SECRET_KEY
-docker compose up --build -d
+docker compose up --build -d   # uses the root docker-compose.yml only
 ```
 
 Services:

@@ -78,13 +78,15 @@ data/         Versioned geroprotector snapshot + target catalog
 ## Repository layout
 
 ```
+docker-compose.yml   Only Compose file; run from the repo root
 apps/web/            React client
 apps/api/            FastAPI + RDKit
 apps/worker/         RQ consumer
 data/datasets/       Geroprotector snapshot + manifest
 data/targets/        Aging target catalog (PDB / AlphaFold flags)
-deploy/              Compose extras, Caddyfile
-docs/                Deploy notes and methods
+deploy/              Optional Caddyfile
+docs/                Deploy and architecture notes
+.cursor/skills/      Agent skills (workplace-sync)
 ```
 
 ## Tests

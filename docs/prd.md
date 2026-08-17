@@ -14,7 +14,7 @@ Academic geroscience groups stitch commercial suites, desktop docking GUIs, and 
 
 | Role | Who | What they can do today |
 |---|---|---|
-| Researcher | Lab member with an account | Own projects, import/draw molecules, search, queue docking, export, change password |
+| Researcher | Lab member with an account | Own projects, import/draw molecules, search, queue docking, export, change password, workbench assistant |
 | Admin | First registered user, plus the seeded demo account | All researcher actions, plus `/admin` stats, user list, role changes, disable/enable accounts, queue health, add targets by PDB ID |
 
 Single-organization model. There are no org roles, teams, or public API tokens. Disable the seeded demo admin before sharing a lab instance.

@@ -63,7 +63,7 @@ The Vite dev server proxies `/api` to port 8000.
 
 ```
 apps/web      React 18 + TypeScript + Vite
-apps/api      FastAPI (auth, projects, search, jobs, exports, WebSocket)
+apps/api      FastAPI (auth, projects, search, jobs, exports, WebSocket, assistant)
 apps/worker   RQ worker (descriptor batches + docking)
 data/         Versioned geroprotector snapshot + target catalog
 ```

@@ -27,6 +27,7 @@ Walk this list against the current tree. Fix any row that fails.
 - `docs/prd.md` matches shipped APIs/UI (no .NET gateway as a goal; P1–P3 workbench items are shipped, not listed as unfinished)
 - Dataset version string in `manifest.json` matches what `/api/admin/stats` and exports would show after seed
 - CI runs `pytest` from repo root and `npm test` then `npm run build` in `apps/web`
+- Optional assistant env (`ASSISTANT_API_KEY`, `ASSISTANT_PROVIDER`) is documented in `.env.example` and `docs/deploy.md`; the PRD does not list Claude Code / Cursor / Codex as Compose services
 
 ## Compose
 

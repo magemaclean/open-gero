@@ -264,6 +264,53 @@ class MethodsOut(BaseModel):
     provenance: dict[str, Any]
 
 
+class ChatMessageIn(BaseModel):
+    role: str = Field(pattern="^(user|assistant)$")
+    content: str = Field(max_length=16_000)
+
+
+class AssistantChatIn(BaseModel):
+    messages: list[ChatMessageIn] = Field(min_length=1, max_length=40)
+    project_id: str | None = None
+
+
+class AssistantConfirmIn(BaseModel):
+    confirm_id: str = Field(min_length=8, max_length=80)
+
+
+class PendingActionOut(BaseModel):
+    name: str
+    summary: str
+    arguments: dict[str, Any] = Field(default_factory=dict)
+
+
+class AssistantDownloadOut(BaseModel):
+    filename: str
+    url: str
+
+
+class AssistantChatOut(BaseModel):
+    reply: str
+    pending_actions: list[PendingActionOut] = Field(default_factory=list)
+    confirm_id: str | None = None
+    downloads: list[AssistantDownloadOut] = Field(default_factory=list)
+    configured: bool = True
+
+
+class AssistantStatusOut(BaseModel):
+    configured: bool
+    provider: str
+    source: str
+    has_user_key: bool
+    model: str
+
+
+class AssistantSettingsIn(BaseModel):
+    provider: str = Field(default="", max_length=32)
+    api_key: str = Field(default="", max_length=256)
+    clear: bool = False
+
+
 class AdminStats(BaseModel):
     users: int
     projects: int

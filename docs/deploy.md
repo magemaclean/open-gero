@@ -31,6 +31,8 @@ Change the default Postgres password before any network-exposed deploy.
 
 The first account created on a blank database is an admin. The seeded demo user is also admin (`demo@opengero.local` / `demo12345`). Before a shared lab deploy: change passwords on `/account`, create a second admin if needed, then disable the demo account from `/admin`. The last remaining admin cannot be demoted or disabled.
 
+Optional workbench assistant: set `ASSISTANT_API_KEY` and `ASSISTANT_PROVIDER` (`anthropic` or `openai`) on the API service, or let each user paste a key on `/account`. Prompts are sent to that provider. Writes still require an in-UI confirm.
+
 ## Adding DrugAge / GenAge snapshots
 
 Place an OSI-compatible JSON file in `data/datasets/` and add an entry to `manifest.json` with `slug`, `version`, `license`, and `file`. Restart the API so `seed_all` loads new slugs. Do not commit restrictively licensed dumps.

@@ -130,3 +130,11 @@ export type ImportReport = {
   duplicates_merged: number;
   errors: { row?: number; name?: string; error: string }[];
 };
+
+export type AssistantStatus = {
+  configured: boolean;
+  provider: string;
+  source: string;
+  has_user_key: boolean;
+  model: string;
+};

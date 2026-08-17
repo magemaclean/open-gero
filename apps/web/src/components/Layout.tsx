@@ -17,6 +17,7 @@ import {
   IconSun,
   IconTarget,
 } from "./icons";
+import { AssistantHost } from "./Assistant";
 import { Breadcrumbs, EngineBanner, useTheme } from "./ui";
 import { crumbsFor, lastProjectId, rememberProject } from "../lib/nav";
 
@@ -162,12 +163,13 @@ export function AppShell({ children, mode }: { children: ReactNode; mode: "proje
         <Breadcrumbs crumbs={crumbs} />
         {children}
       </main>
+      <AssistantHost />
       <CommandPalette projectId={projectId} isAdmin={user?.role === "admin"} />
     </div>
   );
 }
 
-type Command = { id: string; label: string; hint: string; to: string };
+type Command = { id: string; label: string; hint: string; to?: string; action?: () => void };
 
 function CommandPalette({ projectId, isAdmin }: { projectId?: string; isAdmin?: boolean }) {
   const navigate = useNavigate();
@@ -179,7 +181,8 @@ function CommandPalette({ projectId, isAdmin }: { projectId?: string; isAdmin?: 
   const commands = useMemo<Command[]>(() => {
     const list: Command[] = [
       { id: "home", label: "All projects", hint: "Home", to: "/" },
-      { id: "account", label: "Account", hint: "Password", to: "/account" },
+      { id: "account", label: "Account", hint: "Password & assistant key", to: "/account" },
+      { id: "assistant", label: "Workbench assistant", hint: "Ctrl+Shift+J", action: () => window.dispatchEvent(new Event("opengero:assistant")) },
     ];
     if (isAdmin) list.push({ id: "admin", label: "Admin", hint: "Queue & users", to: "/admin" });
     if (projectId) {
@@ -235,7 +238,9 @@ function CommandPalette({ projectId, isAdmin }: { projectId?: string; isAdmin?: 
               e.preventDefault();
               setIdx((i) => Math.max(0, i - 1));
             } else if (e.key === "Enter" && filtered[idx]) {
-              navigate(filtered[idx].to);
+              const cmd = filtered[idx];
+              if (cmd.action) cmd.action();
+              else if (cmd.to) navigate(cmd.to);
               setOpen(false);
             }
           }}
@@ -247,7 +252,8 @@ function CommandPalette({ projectId, isAdmin }: { projectId?: string; isAdmin?: 
             className={`palette-item${i === idx ? " active" : ""}`}
             onMouseEnter={() => setIdx(i)}
             onClick={() => {
-              navigate(c.to);
+              if (c.action) c.action();
+              else if (c.to) navigate(c.to);
               setOpen(false);
             }}
           >

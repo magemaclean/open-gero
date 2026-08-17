@@ -35,7 +35,7 @@ These are closed decisions, not open questions.
 
 ```
 apps/web      React 18 + TypeScript + Vite (dark-first workbench, light theme)
-apps/api      FastAPI (auth, projects, search, jobs, exports, WebSocket)
+apps/api      FastAPI (auth, projects, search, jobs, exports, WebSocket, assistant)
 apps/worker   RQ consumer (descriptor batches + docking); reuses the API package
 data/         Versioned geroprotector snapshot + aging target catalog
 ```

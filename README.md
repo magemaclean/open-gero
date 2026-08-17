@@ -57,6 +57,7 @@ The Vite dev server proxies `/api` to port 8000.
 7. **Docking jobs** — chunked batches, cancel, WebSocket progress (HTTP poll fallback), result cache keyed on molecule + target + parameters.
 8. **Results** — ranked scores, 3D pose viewer, CSV/SDF export with a provenance block, auto-written methods paragraph.
 9. **Admin / account** — users, roles, disable/enable (last-admin protected), disk usage, queue health, password change. First registered user is admin; disable the seeded demo admin on a shared lab.
+10. **Assistant** — in-app chat that reads the workbench and runs writes after confirm. Lab `ASSISTANT_API_KEY` or a user key on `/account` (Anthropic / OpenAI).
 
 ## Architecture
 

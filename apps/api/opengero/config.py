@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     vina_binary: str = "vina"
     obabel_binary: str = "obabel"
 
+    assistant_provider: str = "anthropic"
+    assistant_api_key: str = ""
+    assistant_model: str = ""
+
     @property
     def origins(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

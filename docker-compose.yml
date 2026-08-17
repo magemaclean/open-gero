@@ -36,6 +36,9 @@ services:
       DATASETS_DIR: /data/datasets
       TARGETS_DIR: /data/targets
       STORAGE_DIR: /var/opengero/storage
+      ASSISTANT_PROVIDER: ${ASSISTANT_PROVIDER:-anthropic}
+      ASSISTANT_API_KEY: ${ASSISTANT_API_KEY:-}
+      ASSISTANT_MODEL: ${ASSISTANT_MODEL:-}
     volumes:
       - storage:/var/opengero/storage
     depends_on:

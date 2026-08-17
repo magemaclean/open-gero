@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from . import __version__
 from .config import get_settings
 from .db import SessionLocal, init_db
+from .assistant.router import router as assistant_router
 from .routers import admin, auth, chem, datasets, exports, jobs, molecules, projects, search, targets
 from .seed import seed_all
 
@@ -82,6 +83,7 @@ def create_app() -> FastAPI:
     app.include_router(exports.router)
     app.include_router(admin.router)
     app.include_router(chem.router)
+    app.include_router(assistant_router)
     return app
 
 

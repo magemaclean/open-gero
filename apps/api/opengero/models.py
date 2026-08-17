@@ -243,3 +243,13 @@ class ExportRecord(Base, TimestampMixin):
     format: Mapped[str] = mapped_column(String(16))
     filename: Mapped[str] = mapped_column(String(240), default="")
     provenance_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+
+
+class AssistantSettings(Base, TimestampMixin):
+    """Per-user BYOK for the workbench assistant. Lab-wide keys stay in env."""
+
+    __tablename__ = "assistant_settings"
+
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    provider: Mapped[str] = mapped_column(String(32), default="")
+    api_key_enc: Mapped[str] = mapped_column(Text, default="")
